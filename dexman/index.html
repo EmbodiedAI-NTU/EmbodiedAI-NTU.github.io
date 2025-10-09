@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Primary Meta Tags -->
+  <!-- TODO: Replace with your paper title and author names -->
+  <!-- Double-blind safe metadata -->
+  <!-- TODO: Write a compelling 150-160 character description of your research -->
+  <meta name="description" content="Video-to-policy framework for bimanual humanoids: dexterous manipulation learned from monocular human and Veo3-generated demonstrations.">
+  <!-- TODO: Add 5-10 relevant keywords for your research area -->
+  <meta name="keywords" content="dexterous manipulation, bimanual robotics, reinforcement learning, pose estimation">
+  <!-- TODO: List all authors -->
+  <!-- <meta name="author" content="REDACTED_FOR_DOUBLE_BLIND"> -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="language" content="English">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <!-- TODO: Replace with your institution or lab name -->
+  <!-- TODO: Same as paper title above -->
+  <!-- TODO: Same as description above -->
+  <meta property="og:description" content="Video-to-policy framework for bimanual humanoids derived from monocular demonstrations.">
+  <!-- TODO: Replace with your actual website URL -->
+  <meta property="og:url" content="https://dexman2026.github.io">
+  <!-- TODO: Create a 1200x630px preview image and update path -->
+  <meta property="og:image" content="static/images/social_preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="DexMan teaser image">
+  <!-- Article metadata omitted for double-blind review -->
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- TODO: Replace with your lab/institution Twitter handle -->
+  <!-- TODO: Same as description above -->
+  <meta name="twitter:description" content="Video-to-policy framework for bimanual humanoids derived from monocular demonstrations.">
+  <!-- TODO: Same as social preview image above -->
+  <meta name="twitter:image" content="static/images/social_preview.png">
+  <meta name="twitter:image:alt" content="DexMan teaser">
+
+  <!-- Academic/Research Specific -->
+  <!-- TODO: Same as paper title above -->
+  <meta name="citation_title" content="DexMan: Learning Bimanual Dexterous Manipulation from Human and Generated Videos">
+  <!-- citation_author intentionally omitted for double-blind review -->
+  <!-- TODO: Update once publication date is final -->
+  <meta name="citation_publication_date" content="2026">
+  <!-- TODO: Replace with your conference/journal name -->
+  <!-- TODO: Replace with your hosted PDF URL -->
+  <meta name="citation_pdf_url" content="4832.pdf">
+  
+  <!-- Additional SEO -->
+  <meta name="theme-color" content="#2563eb">
+  <meta name="msapplication-TileColor" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ajax.googleapis.com">
+  <link rel="preconnect" href="https://documentcloud.adobe.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+  
+  <!-- Favicon and App Icons -->
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link rel="apple-touch-icon" href="static/images/favicon.ico">
+  
+  <!-- Critical CSS - Load synchronously -->
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+  
+  <!-- Non-critical CSS - Load asynchronously -->
+  <link rel="preload" href="static/css/bulma-carousel.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/bulma-slider.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/fontawesome.all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  
+  <!-- Fallback for browsers that don't support preload -->
+  <noscript>
+    <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  </noscript>
+  
+  <!-- Fonts - Optimized loading -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Defer non-critical JavaScript -->
+  <script defer src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script defer src="static/js/bulma-carousel.min.js"></script>
+  <script defer src="static/js/bulma-slider.min.js"></script>
+  <script defer src="static/js/index.js"></script>
+  
+  <!-- Minimal structured data retained without author identifiers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "DexMan: Learning Bimanual Dexterous Manipulation from Human and Generated Videos",
+    "description": "Video-to-policy framework for bimanual humanoids derived from monocular demonstrations.",
+    "author": {
+      "@type": "Organization",
+      "name": "Anonymous"
+    },
+    "datePublished": "2026-01-01",
+    "publisher": {
+      "@type": "Organization",
+      "name": "International Conference on Learning Representations"
+    },
+    "url": "https://dexman2026.github.io",
+    "image": "static/images/social_preview.png",
+    "keywords": ["dexterous manipulation", "bimanual robotics", "reinforcement learning", "pose estimation"],
+    "isAccessibleForFree": true
+  }
+  </script>
+</head>
+<body>
+
+
+  <!-- Scroll to Top Button -->
+  <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <!-- More works list hidden during double-blind review
+  <div class="more-works-container">
+    <button class="more-works-btn" onclick="toggleMoreWorks()" title="View More Works from Our Lab">
+      <i class="fas fa-flask"></i>
+      More Works
+      <i class="fas fa-chevron-down dropdown-arrow"></i>
+    </button>
+    <div class="more-works-dropdown" id="moreWorksDropdown">
+      <div class="dropdown-header">
+        <h4>More Works from Our Lab</h4>
+        <button class="close-btn" onclick="toggleMoreWorks()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="works-list">
+        <a href="https://arxiv.org/abs/PAPER_ID_1" class="work-item" target="_blank">
+          <div class="work-info">
+            <h5>Paper Title 1</h5>
+            <p>Brief description of the work and its main contribution.</p>
+            <span class="work-venue">Conference/Journal 2024</span>
+          </div>
+          <i class="fas fa-external-link-alt"></i>
+        </a>
+        <a href="https://arxiv.org/abs/PAPER_ID_2" class="work-item" target="_blank">
+          <div class="work-info">
+            <h5>Paper Title 2</h5>
+            <p>Brief description of the work and its main contribution.</p>
+            <span class="work-venue">Conference/Journal 2023</span>
+          </div>
+          <i class="fas fa-external-link-alt"></i>
+        </a>
+        <a href="https://arxiv.org/abs/PAPER_ID_3" class="work-item" target="_blank">
+          <div class="work-info">
+            <h5>Paper Title 3</h5>
+            <p>Brief description of the work and its main contribution.</p>
+            <span class="work-venue">Conference/Journal 2023</span>
+          </div>
+          <i class="fas fa-external-link-alt"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  -->
+
+  <main id="main-content">
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <!-- TODO: Replace with your paper title -->
+            <h1 class="title is-1 publication-title">DexMan: Learning Bimanual Dexterous Manipulation from Human and Generated Videos</h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">Jhen Hsieh<sup>1</sup></span>
+              <span class="author-block">Kuan-Hsun Tu<sup>1</sup></span>
+              <span class="author-block">Kuo-Han Hung<sup>1, 2</sup></span>
+              <span class="author-block">Tsung-Wei Ke<sup>1</sup></span>
+            </div>
+            <div class="is-size-6 publication-affiliations">
+              <span class="affiliation-block"><sup>1</sup> National Taiwan University</span>
+              <span class="affiliation-block"><sup>2</sup> Stanford University</span>
+            </div>
+
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/placeholder" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>ArXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/EmbodiedAI-NTU" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="static/pdfs/sample.pdf" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+<!-- Teaser media -->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <figure class="teaser-figure">
+        <img src="static/images/teaser.png" class="teaser-media" alt="DexMan teaser" loading="lazy">
+      </figure>
+      <h2 class="subtitle has-text-centered">
+        DexMan converts monocular human demonstrations into coordinated humanoid manipulation skills, evaluated on Veo3, TACO, and OakInk-v2.
+      </h2>
+    </div>
+  </div>
+</section>
+<!-- End teaser media -->
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <!-- TODO: Replace with your paper abstract -->
+          <p>
+            We present DexMan, an automated framework that converts human visual demonstrations into bimanual dexterous manipulation skills for humanoid robots in simulation. Operating directly on third-person videos of humans manipulating rigid objects, DexMan eliminates the need for camera calibration, depth sensors, scanned 3D object assets, or ground-truth hand and object motion annotations. Unlike prior approaches that consider only simplified floating hands, it directly controls a humanoid robot and leverages novel contact-based rewards to improve policy learning from noisy hand–object poses estimated from in-the-wild videos. DexMan achieves state-of-the-art performance in object pose estimation on TACO, with absolute gains of 0.08 and 0.12 in ADD-S and VSD. Meanwhile, its RL policy surpasses previous methods by 19% success rate on OakInk-v2. Furthermore, DexMan can generate skills from both real and synthetic videos, without the need for manual data collection and costly motion capture, and enabling the creation of large-scale, diverse datasets for training generalist dexterous manipulation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+
+<!-- Key contributions overview -->
+<!-- <section class="hero is-small">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">At a Glance</h2>
+      <div class="content"> -->
+        <!-- TODO: Update with your key contribution summary -->
+        <!-- <ul>
+          <li>Object reconstruction pipeline fuses SAM2 masks, Trellis meshes, and VGGT depth alignment to produce scale-consistent assets regularized by tracked trajectories.</li>
+          <li>Human-to-humanoid retargeting combines analytical IK for wrists with a learned finger solver and stable pose sampling to initialize Isaac Gym scenes.</li>
+          <li>Object-centric contact rewards complement residual imitation, enabling robust grasp formation when learning from noisy monocular video motion.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+
+
+
+<!-- Method video -->
+<section class="hero is-small is-light method-overview-section">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Method Overview</h2>
+      <div class="columns is-centered">
+        <div class="column is-four-fifths method-overview">
+          <figure class="framework-figure">
+            <img src="static/images/framework.png" class="framework-media" alt="DexMan method overview" loading="lazy">
+          </figure>
+          <p class="is-size-6 has-text-justified method-description">
+            <strong>Overview of DexMan.</strong> DexMan is a framework for acquiring robot skills from human videos. <strong>Top:</strong> From monocular input, DexMan reconstructs object meshes, estimates depth, and recovers 3D hand–object motions, then retargets these to a full humanoid robot in simulation (Isaac Gym) rather than floating hands. <strong>Bottom:</strong> A residual RL policy refines retargeted motions to reproduce object trajectories, guided by human motion and contact priors. DexMan introduces a contact reward that encourages stable grasps for effective RL training, enabling the robot to complete demonstrated manipulation tasks.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End method overview -->
+
+
+<!-- Video carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3 has-text-centered">Skills Learned from Veo3 Demonstrations</h2>
+      <p class="veo3-note">* All demo videos are rendered by Blender</p>
+      <div class="demo-grid veo3-grid">
+        <!-- <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_dumbell1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_dumbell1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A dumbbel was placed on the table.  The right hand lift up the dumbbel from the tabletop, hand over to the left hand, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div> -->
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_microscope1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_microscope1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A microscope was placed on the table.  Both hands lift up the microscope from the top and the bottom and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_peeler1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_peeler1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A vegetable peeler was placed on the table.  The right hand lifts up the peeler, hands over to the left hand, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_pot1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_pot1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A pot with two handles was placed on the table.  Both hands lift up the pot by grasping the handles and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_skateboard1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_skateboard1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times.  A skateboard was placed on the table.  Both hands lift up the skateboard by grasping its body, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_tire1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/lift_tire1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A tire was placed on the table.  The tire is small size, which can be grasped by the person&#x27;s hand. Both hands lift up the tire and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_alarmclock1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_alarmclock1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times.  An alarm clock was placed on the wooden table.  The right hand lifts up the alarm clock, hands over to the left hand, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_banana1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_banana1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>The right hand lifts up the small strainer, hands over to the left hand, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_binocular1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_binocular1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times.  A binocular was placed on the wooden table.  The right hand lifts up the binocular, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_book1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_book1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times.  A book was placed on the table.  Both hands lift up the book, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_corkscrew1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_corkscrew1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A corkscrew was placed on the table.  The right hand lifts up the corkscrew, hands over to the left hand, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_plunger1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_plunger1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A plunger was placed on the table.  Both hands lift up the plunger by grasping the top and bottom, and put down on the left hand. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_rubberstamp1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_rubberstamp1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A rubber stamp was placed on the table.  The right hand pick up the rubber stamp from the tabletop and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_stapler1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_stapler1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times.  A stapler was placed on the wooden table.  The right hand lifts up the stapler, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_tapedispenser1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_tapedispenser1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A tape dispenser was placed on the table.  The right hand pick up the tape dispenser from the tabletop and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_winebottle1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pick_winebottle1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A wine bottle was placed on the table.  The right hand pick up the wine bottle from the tabletop and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pour_water1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/pour_water1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a very high angle and far distance shows a man standing in front of a table. His body remains still, both hands and all fingers are always visible. The man’s right hand reaches out toward a matte black water bottle on the table, grasps it, lifts it up, and performs a clear pouring motion, while the rest of his body stays stationary. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/tilt_kettle1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/tilt_kettle1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A kettle was placed on the table.  The right hand picks up the kettle from the tabletop, tilt the kettle, and put down on the table. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/use_iron1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/use_iron1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. An iron was placed on the table.  The right hand picks up the iron from the tabletop, moves it horizontally toward the left hand, and put down on the left hand. No other objects are present in the scene.</p>
+          </details>
+        </div>
+        <!-- <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Prompt Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/wield_hammer1_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/wield_hammer1.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <details class="veo3-description">
+            <summary>
+              <i class="fas fa-align-left" aria-hidden="true"></i>
+              <span>Prompt to Veo3</span>
+            </summary>
+            <p>A stationary third-person camera from a high angle and far distance shows a man with smiling face sitting in the front of a table.  His body does not move. Both hands and all fingers are visible at all times. A hammer was placed on the table.  The right hand picks up the hammer from the tabletop, moves it horizontally toward the left hand, and put down on the left hand. No other objects are present in the scene.</p>
+          </details>
+        </div> -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3 has-text-centered">Skills Learned from TACO Dataset</h2>
+      <div class="demo-grid veo3-grid">
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20230917_017_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20230917_017.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+        <!-- <div class="demo-card">
+          <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+            <source src="dexman_viz/20230926_038.mp4" type="video/mp4">
+          </video>
+        </div> -->
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20230927_002_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20230927_002.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+        <!-- <div class="demo-card">
+          <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+            <source src="dexman_viz/20230927_020.mp4" type="video/mp4">
+          </video>
+        </div> -->
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231013_142_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231013_142.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231027_045_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231027_045.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231103_014_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231103_014.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+        <div class="demo-card veo3-card">
+          <div class="veo3-card-media">
+            <div class="veo3-video">
+              <span class="veo3-video-label">Original Video</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231103_142_original.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="veo3-video">
+              <span class="veo3-video-label">DexMan Skill</span>
+              <video class="demo-video" autoplay muted loop playsinline controls preload="metadata">
+                <source src="dexman_viz/20231103_142.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End video carousel -->
+
+
+<!-- Poster placeholder hidden until anonymized asset is ready -->
+<!--
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title">Poster</h2>
+      <iframe src="static/pdfs/sample.pdf" width="100%" height="550"></iframe>
+    </div>
+  </div>
+</section>
+-->
+
+
+<!-- BibTeX intentionally omitted during double-blind review -->
+
+
+  <footer class="footer">
+  <div class="container has-text-centered">
+    <p class="footer-note">DexMan project page • Built from the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank" rel="noopener">Academic Project Page Template</a> (CC BY-SA 4.0).</p>
+  </div>
+</footer>
+
+<!-- Statcounter tracking code -->
+  
+<!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+
+    <!-- End of Statcounter Code -->
+
+  </body>
+  </html>
