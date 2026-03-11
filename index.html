@@ -1,17 +1,362 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=dexman/index.html" />
-    <title>Redirecting to dexman</title>
-    <script>
-      window.location.replace('dexman/index.html');
-    </script>
-  </head>
-  <body>
-    <p>
-      Redirecting to
-      <a href="dexman/index.html">dexman/index.html</a>…
-    </p>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embodied AI (EAI) Lab</title>
+  <base target="_blank">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pub-link-color: #2563eb;
+      --pub-link-underline: #93c5fd;
+      --pub-sup-color: #52525b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Libre Baskerville', Georgia, serif;
+      color: #1f2937;
+      line-height: 1.7;
+      background: #fff;
+      font-size: 18px;
+    }
+    
+    h1, h2 {
+      font-family: 'Libre Baskerville', Georgia, serif;
+      font-weight: 700;
+    }
+    
+    a {
+      text-decoration: none;
+      color: #2563eb;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 2rem 1.25rem;
+      }
+      body {
+        font-size: 16px;
+      }
+    }
+    
+    /* Header */
+    .header {
+      margin-bottom: 2rem;
+    }
+    
+    .header h1 {
+      font-size: 2rem;
+      color: #1f2937;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+    
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+    }
+    
+    .header-line {
+      height: 3px;
+      background: #1e3a5f;
+    }
+    
+    /* Description */
+    .description {
+      margin-bottom: 3rem;
+      color: #374151;
+    }
+    
+    .description p {
+      margin-bottom: 1rem;
+    }
+    
+    /* Section */
+    section {
+      margin-bottom: 3rem;
+    }
+    
+    section h2 {
+      font-size: 1.5rem;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      section h2 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    .section-line {
+      height: 2px;
+      background: #1e3a5f;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-note {
+      font-size: 0.7em;
+      font-weight: 400;
+      color: #1e3a5f;
+      letter-spacing: 0.01em;
+    }
+
+    .section-note sup {
+      font-size: 0.8em;
+      vertical-align: super;
+      line-height: 0;
+      color: var(--pub-sup-color);
+    }
+    
+    /* Publications */
+    .publications ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+    }
+    
+    .publications li {
+      margin-bottom: 1.75rem;
+    }
+    
+    .pub-title {
+      color: #111111;
+      font-weight: 700;
+      font-size: 1.05em;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .pub-authors {
+      color: #1f1f1f;
+      margin-bottom: 0.15rem;
+    }
+
+    .pub-authors strong {
+      color: inherit;
+      font-weight: inherit;
+    }
+    
+    .pub-authors sup {
+      font-size: 0.7em;
+      margin-left: 1px;
+      color: var(--pub-sup-color);
+    }
+    
+    .pub-affiliations {
+      font-size: 0.9em;
+      color: #4b5563;
+      margin-bottom: 0.15rem;
+    }
+    
+    .pub-affiliations sup {
+      font-size: 0.75em;
+      margin-right: 1px;
+      color: var(--pub-sup-color);
+    }
+    
+    .pub-venue {
+      font-size: 0.9em;
+      color: #161616;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin-bottom: 0.25rem;
+    }
+    
+    .pub-links {
+      font-size: 0.9em;
+      color: #111111;
+    }
+    
+    .pub-links a {
+      color: var(--pub-link-color);
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-color: var(--pub-link-underline);
+      text-underline-offset: 0.14em;
+    }
+
+    .pub-links a:hover {
+      color: #000000;
+      text-decoration-color: var(--pub-link-color);
+    }
+    
+    .people-section {
+      display: grid;
+      gap: 2rem;
+    }
+
+    .people-group h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.75rem;
+    }
+
+    .people-list {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .people-list li {
+      color: #374151;
+      font-size: 1rem;
+    }
+
+    .people-list a {
+      color: #2563eb;
+    }
+
+    .people-list a:hover {
+      color: #1d4ed8;
+    }
+    
+    /* Footer */
+    footer {
+      padding-top: 2rem;
+      border-top: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Embodied AI (EAI) Lab</h1>
+      <div class="header-line"></div>
+    </div>
+    
+    <!-- Future update: add lab group photo here when assets are ready. -->
+    
+    <!-- Description -->
+    <div class="description">
+      <p>
+        Welcome! The Embodied AI lab are dedicated to developing autonomous, real-world robotic systems. We approach this challenge from three perspectives.  The first is Action Control.  We train robot policies that allow robots to perform mobile manipulation tasks with high efficiency, effectiveness, and robustness.  The second is Learning and Exploration.  We develop algorithms that enable physical agents to explore their environments and continually acquire new skills with minimal human intervention.  The third is Dynamic Modeling.  We build dynamic systems that enhance environmental understanding by simulating the outcomes of physical interactions.  Together, these three research topics aim to create robots that function as intelligently as animal beings.
+      </p>
+      <p>
+        Code for our projects is available at <a href="https://github.com/EmbodiedAI-NTU">https://github.com/EmbodiedAI-NTU</a>.
+      </p>
+      <p>
+        We are looking for Ph.D/Master/undergraduate students interested in robot learning, computer vision, and machine learning. If you are an undergraduate at NTU interested in research positions, please fill out <a href="https://forms.gle/W7rSPF9cM3C5jaZV8">this form</a>. If you are interested in Master/Doctoral positions, please fill out <a href="https://forms.gle/JxzbmXpEAPqp6jkf8">this form</a>.
+      </p>
+
+    </div>
+    
+    <!-- Recent Publications -->
+    <section class="publications">
+      <h2>Recent Publications <span class="section-note">(<sup>&lowast;</sup> Equal contribution. <sup>&dagger;</sup> Corresponding author.)</span></h2>
+      <div class="section-line"></div>
+      <ul>
+        <li>
+          <span class="pub-title">COT-FM: Cluster-wise Optimal Transport Flow Matching</span>
+          <div class="pub-authors">
+            Chiensheng Chiang<sup>*</sup>, <strong>Kuan-Hsun Tu</strong><sup>*&dagger;</sup>, Jia-Wei Liao<sup>*</sup>, Cheng-Fu Chou, and Tsung-Wei Ke
+          </div>
+          <div class="pub-venue">IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2026</div>
+          <div class="pub-links">arXiv / Code / Project Page</div>
+        </li>
+        <li>
+          <span class="pub-title">CRONOS: Benchmarking Multi-Task Robotic Manipulation for Reset-Free Reinforcement Learning At Scale</span>
+          <div class="pub-authors">
+            Po Yi Wu<sup>*</sup>, Djengo Cyun-Jyun Fang<sup>*</sup>, Dian Cheng<sup>*</sup>, Tsung-Wei Ke
+          </div>
+          <div class="pub-venue">Under Review in International Conference on Machine Learning (ICML), 2026</div>
+          <div class="pub-links">arXiv / Code / Project Page</div>
+        </li>
+        <li>
+          <span class="pub-title">DexMan: Learning Bimanual Dexterous Manipulation from Human and Generated Videos</span>
+          <div class="pub-authors">
+            Jhen Hsieh<sup>1</sup>, Kuan-Hsun Tu<sup>1</sup>, Kuo-Han Hung<sup>1,2</sup>, Tsung-Wei Ke<sup>1</sup>
+          </div>
+          <div class="pub-affiliations">
+            <sup>1</sup>National Taiwan University, <sup>2</sup>Stanford University
+          </div>
+          <div class="pub-venue">Under review in Conference on Robot Learning (CoRL), 2026</div>
+          <div class="pub-links">
+            <a href="https://arxiv.org/abs/2510.08475">arXiv</a> / <a href="https://github.com/EmbodiedAI-NTU/DexMan">Code</a> / <a href="https://embodiedai-ntu.github.io/dexman/index.html">Project Page</a>
+          </div>
+        </li>
+        <li>
+          <span class="pub-title">Information Seeking for Robust Decision Making under Partial Observability</span>
+          <div class="pub-authors">
+            Djengo Cyun-Jyun Fang<sup>1</sup>, Tsung-Wei Ke<sup>1</sup>
+          </div>
+          <div class="pub-affiliations">
+            <sup>1</sup>National Taiwan University
+          </div>
+          <div class="pub-venue">ArXiv</div>
+          <div class="pub-links">
+            <a href="https://arxiv.org/abs/2510.01531">arXiv</a> / <a href="https://github.com/InfoSeekerLLM/InfoSeeker">Code</a> / <a href="https://infoseekerllm.github.io/">Project Page</a>
+          </div>
+        </li>
+      </ul>
+    </section>
+    
+    <section>
+      <h2>People</h2>
+      <div class="section-line"></div>
+      <div class="people-section">
+        <div class="people-group">
+          <h3>Professor</h3>
+          <ul class="people-list">
+            <li><a href="https://twke18.github.io/">Tsung-Wei Ke</a></li>
+          </ul>
+        </div>
+        <div class="people-group">
+          <h3>Lab Members</h3>
+          <ul class="people-list">
+            <li><a href="https://syun413.github.io/">Kuan-Hsun Tu</a></li>
+            <li>Po-Yi Wu</li>
+            <li>Jhen Hsieh</li>
+            <li>Fang Jeff</li>
+            <li>Li-Xuan Peng</li>
+            <li>Jian-Sheng Jiang</li>
+            <li>Yen-Hsiang Chen</li>
+            <li>Li-Chen Kao</li>
+            <li>Dian Cheng</li>
+            <li>Hsin-Wei Chen</li>
+            <li>Jyun-Yang Cheng</li>
+            <li>Wei-Lun Hsiao</li>
+            <li>Yu-Tsen Tsai</li>
+          </ul>
+        </div>
+        <div class="people-group">
+          <h3>Alumni</h3>
+          <ul class="people-list">
+            <li>Pang-Chi Lo</li>
+            <li>Jhao-Hsun Lai</li>
+            <li>Djengo Cyun-Jyun Fang</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Future update: add individual member photos when assets and profile links are ready. -->
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+      © 2026 Embodied AI Lab · National Taiwan University
+    </footer>
+  </div>
+</body>
 </html>

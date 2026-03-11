@@ -1,0 +1,447 @@
+\title{COT-FM: Cluster-wise Optimal Transport Flow Matching}
+
+\author{
+Chiensheng Chiang$^{*}$\qquad
+Kuan-Hsun Tu$^{*\dagger}$\qquad
+Jia-Wei Liao$^{*}$\\[6pt]
+Cheng-Fu Chou\qquad
+Tsung-Wei Ke\\[6pt]
+National Taiwan University\\[4pt]
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\begin{document}
+\twocolumn[{
+    \renewcommand\twocolumn[1][]{#1}%
+    \maketitle   
+    \begin{center}
+        \newcommand{\teaserwidth}{\textwidth}
+        \vspace{-0.15in}
+        \centerline{
+        \includegraphics[width=\teaserwidth, clip]{figures/teaser.pdf}
+        }
+        \vspace{-5ex}
+        \captionof{figure}{\textbf{\method{} Yields Straight, Structure-Preserving Transport Flows.} Blue points show the source distribution (Gaussian), and gray points show the target distributions (a 5-component Gaussian mixture and Two Moons). Orange points are generated samples, and purple lines denote the learned transport trajectories. Red crosses mark cluster means under our Cluster-wise Optimal Transport Flow Matching (COT-FM). The method yields straight trajectories while still capturing the structure of each target distribution.}
+        
+    \label{fig:teaser}
+    \vspace{-8pt}
+    \end{center}
+}]
+
+\begin{abstract}
+\vspace{-50pt}
+We introduce \method{}, a general framework that reshapes the probability path in Flow Matching (FM) to achieve faster and more reliable generation. FM models often produce curved trajectories due to random or batch-wise couplings, which increase discretization error and reduce sample quality. \method{} fixes this by clustering target samples and assigning each cluster a dedicated source distribution obtained by reversing pretrained FM models. This divide-and-conquer strategy yields more accurate local transport and significantly straighter vector fields, all without changing the model architecture. As a plug-and-play approach, \method{} consistently accelerates sampling and improves generation quality across 2D datasets, image generation benchmarks, and robotic manipulation tasks.
+\end{abstract}
+
+\section{Introduction}
+\renewcommand{\thefootnote}{}
+\footnotetext{* Equal contribution. $\dagger$ Corresponding author.}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+\setcounter{footnote}{0}
+
+Generative modeling seeks to learn a transformation that maps a simple, known source distribution to the complex, partially known data distribution~\cite{kingma2013auto, rezende2015variational, sohl2015deep, song2019generative, ho2020denoising, song2020score}, for generating new data samples.  Flow Matching (FM)~\cite{lipman2022flow,albergo2022building} is a specific framework: it regresses a deterministic vector field inducing the desired probability path between two distributions.  During inference, source samples are transformed into data samples through integration along the learned vector field.  Due to its flexibility and scalability, FM recently emerges as an effective alternative to generative models, demonstrating promising results in a wide range of tasks~\cite{tong2020trajectorynet,liu2023instaflow,black2024pi_0}.
+
+The formulation of FM is general.  It encompasses different types of generative models, such as diffusion models~\cite{song2020score,ho2020denoising}, if the target vector field is constructed appropriately~\cite{lipman2022flow}.  In practice, straight vector fields are preferred over curved ones, as straighter paths incur lower time-discretization error and therefore reduce sampling steps for generation.  Meanwhile, since FM models often do not learn the entire vector field during training due to computational limitations\footnote{For D-dimensional Gaussian distributions, $e^{\alpha D}$ samples are required to cover the entire vector field~\cite{vershynin2018high}.}, time-discretization error may move samples to unseen locations, leading to distorted transport and low-quality generation.  To enforce straightness, one can construct the vector field based on the optimal transport (OT) map~\cite{benamou2000computational}--the optimal couplings of samples between two distributions with minimal transport cost.  However, the exact solution of OT map is computationally inefficient\footnote{The OT map requires cubic time and quadratic memory complexity in the number of samples.} to obtain for large datasets~\cite{cuturi2013sinkhorn,tong2020trajectorynet}.
+
+To address this limitation, most FM models either adopt random, independent couplings~\cite{lipman2022flow} or approximate the global optimal couplings with batch optimal couplings~\cite{fatras2021minibatchoptimaltransportdistances, nguyen2022improvingminibatchoptimaltransport, pooladian2023multisample,kornilov2024optimal, haxholli2024minibatchoptimaltransportperplexity,davtyan2025faster,lin2025beyond, cheng2025curse}, to construct the vector field during training.  While conceptually simple, the former yield frequent path crossings and the latter struggle with locality of batchwise approximations~\cite{fatras2021unbalanced}, both resulting in curved paths.  To straighten the learned paths, $k$-Rectified Flow~\cite{liu2022flow} proposes to iteratively optimize FM models with couplings between source and generated samples.  Although this approach provably enhances straightness, it repeatedly trains FM models on self-generated samples, leading to model collapse and therefore degrading generation quality over time~\cite{zhu2025analyzingmitigatingmodelcollapse}.
+
+Another line of work bypasses the challenge of learning straight paths, attempting to distill from multi-step model ~\cite{salimans2022progressive, geng2023one, sauer2024adversarial, song2023consistency, yin2024one, zhou2024score} or to learn the average vector field ~\cite{kimconsistency, frans2024one,boffi2024flow, geng2025mean} for accelerating generation.  The latter idea is to skip sampling steps during inference with the average vector field.  Despite their efficiency, these approaches do not modulate the underlying instant vector field of FM models, which remains curved due to random coupling strategy.  As a result, such shortcut methods only reduce step count, but do not enhance generation quality. To illustrate these issues, we present a toy example in Fig.~\ref{fig:teaser}, where the data distribution comprises five modes and the source distribution is Gaussian.  We have three observations: (1) training FM models with either random or  batch optimal couplings like OT-CFM~\cite{tong2024improvinggeneralizingflowbasedgenerative} results in curved flows, (2) shortcut approaches like MeanFlow~\cite{geng2025mean} do not straighten the learned flows, and (3) curved paths lead to distorted data generation. 
+
+We introduce \methodfull{} (\method{}), a general and effective framework that accelerates and enhances a wide range of FM models. We observe that training data of existing generative modeling tasks naturally comprise multiple modes, while data of the same mode can be generated from similar source samples, as shown in Fig.~\ref{fig:teaser}. Based on these observations, our key insight is to partition data samples into clusters, each assigned its own source distribution, rather than mapping the entire data distribution from a single source. This idea brings two advantages: (1) it reduces each optimal coupling problem to a smaller cluster-level match, which reduces the number of data–source samples and makes batch optimal couplings more effective; and (2) by restricting the space of source distributions, learning the overall vector field becomes more efficient. In order to find optimal source distributions for each data cluster, our second insight is to bootstrap from pre-trained FM models. Since paths learned by these models are naturally reversible and non-intersecting, we can easily obtain source distributions for each cluster, incurring less frequent crossings, by reversing the sampling process of these trained models.
+
+Specifically, \method{} alternates optimization of the target vector field and the FM model. In the first stage, the FM model regresses the target vector field derived from a prior or previously estimated cluster-wise source distributions. In the second stage, we update these source distributions by reversing the learned paths for each data sample and computing their Gaussian statistics, followed by approximating OT within each cluster using batch-wise couplings. Notably, our formulation accommodates different types of clustering, including class labels or textual descriptions for conditional generation and unsupervised clustering for unconditional generation. Moreover, \method{} only modulates the target probability path, without altering the FM architecture or input–output mechanisms, making it compatible with most existing FM models and able to improve both generation speed and quality.
+
+\method{} shows strong empirical gains in both one-step and few-step generation. On 2D transport benchmarks, it achieves the best results across all methods, reducing Wasserstein distance from 0.5421 to 0.1995 on Mixture of 5-Gaussians, from 0.1006 to 0.0266 on Two Moons, and from 0.3900 to 0.2550 on Checkerboard, while also attaining the lowest curvature. On CIFAR-10~\cite{krizhevsky2009learning}, \method{} improves Rectified Flow~\cite{liu2022flow} from 12.6 to 8.23 FID at 10 steps and from 4.45 to 3.97 at 50 steps. At very low sampling budgets, it also reduces 1-step FID from 378.0 to 205.0 and 2-step FID from 173 to 59.1. It also enhances MeanFlow~\cite{geng2025mean}, lowering FID from 2.92 to 2.60 (1-step) and 2.88 to 2.53 (2-step). On LIBERO robotic manipulation~\cite{liu2023libero}, \method{} reaches 96.1\% (Spatial) and 94.5\% (Long) with just 1 NFE, while the FLOWER policy~\cite{reuss2025flower} requires 4 NFEs to reach 97.1\% and 93.5\%. Together, these results show that clustering targets and learning cluster-wise source distributions lead to straighter transport paths and more reliable low-step generation. These consistent improvements across domains confirm that reducing flow curvature is key to enabling high-quality generation under extremely low sampling budgets.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=\linewidth]{figures/curvature.pdf}
+    \caption{\textbf{Vector field results from different coupling strategies.} Random coupling forces the model to regress inconsistent (gray) velocity targets, creating ambiguous intersections and pushing the model toward an averaged (purple) direction, which produces curved velocity fields. In contrast, optimal transport provides consistent couplings with fewer intersections, enabling the model to learn much straighter velocity fields.}
+    \label{fig:curvature}
+\end{figure}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=\textwidth]{figures/method.pdf}
+    \caption{\textbf{Overview of our proposed method.} In Stage 1, we cluster the dataset, and for each image within a cluster $\mathcal{C}_k$, we reverse the ODE back to the noise space using a pretrained flow model to compute the new mean $\bm{\mu}_{0,k}$ and covariance $\bm{\Sigma}_{0,k}$ for that cluster. In Stage 2, we apply optimal transport to finetune the pretrained flow model across all clusters, encouraging it to align with the distributional structure captured in Stage 1. During inference, we first sample a cluster index $k$, then draw a noise $\bm{x}$ from $\mathcal{N}(\bm{\mu}_{0,k}, \bm{\Sigma}_{0,k})$, and use this noise to generate an image through the finetuned flow model.}
+    \label{fig:method}
+\end{figure*}
+\section{Preliminary of Flow Matching}
+\label{sec:preliminary}
+
+The objective of flow matching (FM) models is to match a time-dependent vector field transporting samples from a source distribution $p_0$ to those of a target distribution $p_1$.  This formulation is conceptually simple and computationally efficient: it avoids expensive simulation during training while enabling generation through ordinary differential equation (ODE) integration during testing.
+
+Formally, let $\bm{v}_t: [0, 1] \times \mathbb{R}^d    \rightarrow \mathbb{R}^d$ denote a time-varying \textit{vector field} that defines an ODE: $\mathrm{d}\bm{x}_t = \bm{v}_t(\bm{x}_t) \, \mathrm{d}t$.  The integration map (or \textit{flow}) of the ODE describes the transformation of sample $\bm{x}_0$ along the vector field from time $0$ to $t$.  In other words, the flow reshapes a simple source distribution $p_0$ to a complex target distribution $p_1$, where $p_t$ denote the \textit{probability path}--intermediate density functions transported along the vector field from time $0$ to $t$.  The FM objective regresses the vector field $\bm{v}_t$ with a neural network $\bm{v}_\theta$ parameterized by weights $\theta$, which is formulated as:
+\begin{equation}
+    \mathcal{L}_\textsf{FM}(\theta) = \mathbb{E}_{t, \bm{x}_t \sim p_t} \|\bm{v}_\theta(\bm{x}_t, t) - \bm{v}_t(\bm{x}_t)\|_2^2.
+\end{equation}
+
+However, the derivation of vector field $\bm{v}_t$ and probability path $p_t$ is often intractable for general source and target distributions~\cite{tong2024improvinggeneralizingflowbasedgenerative}.  To address this limitation, \cite{tong2024improvinggeneralizingflowbasedgenerative,lipman2022flow} suggest to construct the target probability path via a mixture of simpler conditional probability paths $p_t(\bm{x}_t | \bm{z})$ with variable $\bm{z}$, which may flexibly correspond to either data sample $\bm{x}_1$ or a pair of source-data sample $(\bm{x}_0, \bm{x}_1)$.  Marginalizing $p_t(\bm{x}_t | \bm{z})$ over distribution $q(\bm{z})$ produces the marginal probability path:
+\begin{align}
+    p_t(\bm{x}_t) = \int p_t(\bm{x}_t | \bm{z})q(\bm{z}) \, \mathrm{d} \bm{z}.
+\label{eqn:marginal_probpath}
+\end{align}
+Meanwhile, we define the marginal vector field: 
+\begin{align}
+    \bm{v}_t(\bm{x}_t) = \mathbb{E}_{q(\bm{z})} \left[ \frac{\bm{v}_t(\bm{x}_t|\bm{z})p_t(\bm{x}_t|\bm{z})}{p_t(\bm{x}_t)} \right].
+\label{eqn:marginal_vecfield}
+\end{align}
+If conditional vector field $\bm{v}_t(\bm{x}_t|\bm{z})$ generates conditional probability path $p_t(\bm{x}_t|\bm{z})$, the marginal vector field $\bm{v}_t(\bm{x}_t)$ is shown to generate the marginal probability path $p_t(\bm{x}_t)$~\cite{tong2024improvinggeneralizingflowbasedgenerative}.  Lastly, we define the conditional flow matching (CFM) objective as:
+\begin{align}
+    \mathcal{L}_\textsf{CFM}(\theta) = \mathbb{E}_{t, q(\bm{z}), p_t(\bm{x}_t|\bm{z})} \|\bm{v}_\theta(\bm{x}_t, t) - \bm{v}_t(\bm{x}_t | \bm{z})\|_2^2
+    \label{eqn:cfm_loss}
+\end{align}
+leading to identical gradients as FM loss:
+\begin{align}
+    \nabla_\theta \mathcal{L}_\textsf{FM}(\theta)=\nabla_\theta \mathcal{L}_\textsf{CFM}(\theta).
+\end{align}
+
+\paragraph{Random Coupling.}
+Randomly pairing a source sample $\bm{x}_0 \sim p_0$ with a target sample $\bm{x}_1 \sim p_1$ is a common way for training FM models.  Specifically, random coupling is formulated by setting variable $\bm{z}$ to a pair of source-target sample $(\bm{x}_0, \bm{x}_1)$, the distribution $q(\bm{z}) = p_0(\bm{x}_0)p_1(\bm{x}_1)$, and the conditional vector field $\bm{v}_t(\bm{x}_t|\bm{z}) = \bm{x}_1 - \bm{x}_0$. While each sample pair induces a straight path, the marginal vector field is curved as it aggregates paths of different sample pairs at each point $\bm{x}$ and time $t$. As illustrated in Fig.~\ref{fig:curvature}, this averaging of conflicting directions produces curved trajectories that lead to distribution misalignment.
+
+\paragraph{Optimal Coupling.}
+To enforce straightness, one can set distribution $q(z)$ to be the 2-Wasserstein OT map:
+\begin{align}
+    \pi(\bm{x}_0, \bm{x}_1) = \arginf_{\pi \in \Pi} \int \|\bm{x}_0 - \bm{x}_1\|_2^2 \, \mathrm{d} \pi(\bm{x}_0, \bm{x}_1)
+    \label{eqn:ot}
+\end{align}
+
+where $\Pi$ denotes the set of all possible transport plans.  However, calculation of OT map $\pi(\bm{x}_0, \bm{x}_1)$ requires cubic time complexity in the number of samples, while continuous source distributions like Gaussian have infinite number of samples, therefore solving global OT map for large datasets is computationally infeasible.  To address this limitation, existing approaches often approximate the OT map with batch-wise OT map~\cite{fatras2021minibatchoptimaltransportdistances, nguyen2022improvingminibatchoptimaltransport, pooladian2023multisample,kornilov2024optimal, haxholli2024minibatchoptimaltransportperplexity,davtyan2025faster,lin2025beyond, cheng2025curse}.  However, with limited size of mini-batches, these methods struggle with locality of batchwise approximations~\cite{fatras2021unbalanced}, resulting in curved paths. For a more comprehensive discussion of related work, please refer to the Supplementary Material.
+\section{Method}
+\label{sec:method}
+
+We propose \method{}, a general, plug-and-play framework that seeks an optimal vector field to accelerate and enhance generation quality of FM models.  The core idea is to divide-and-conquer the calculation of optimal couplings by clustering target samples, identifying corresponding source distributions for each cluster, and approximately solving optimal couplings within each cluster.  The FM model is then updated by regressing this vector field with straighter flows.  \method{} alternates between optimizing the target vector field and the FM model.  Notably, \method{} only modulates the underlying target probability path of the FM model, without modifying its architecture or input-output mechanisms.  This design makes \method{} broadly applicable across diverse FM models.  An overview of the proposed framework is illustrated in Fig.~\ref{fig:method}.
+
+
+\subsection{Constructing Cluster-wise Target Vector Field}
+\label{sec:clustering}
+
+Our \method{} begins by partitioning target samples into clusters, then identifies source distributions and constructs a local target vector field for each cluster.  This formulation is efficient and general: it reduces the number of source-target samples, making approximation of OT more effective, and it generalizes to different types of clustering, such as class labels or textual descriptions for text-conditional generation and unsupervised clustering for unconditional generation.
+
+\paragraph{Identifying Cluster-wise Source Distributions.}
+To search individual source distributions, we propose to bootstrap from pre-trained FM models. Although originally trained with random coupling, their learned flows are naturally reversible while non-intersecting.  The former property allows us to estimate cluster-wise source distributions by integrating the flow backward to trace source samples that generate every data sample of a cluster; the latter property ensures paths between different clusters have few crossings.
+Formally, we reverse ODE integration to retrieve the source sample of data sample $\bm{x}_{1}$:
+\begin{align}
+    \hat{\bm{x}}_{0} := \bm{x}_{1} - \int_0^1 \bm{v}_\theta(\hat{\bm{x}}_t, t) \, \mathrm{d}t,
+    \label{eq:reverse_ode}
+\end{align}
+where $\bm{v}_\theta$ is the velocity field from a trained FM model and $\hat{\bm{x}}_t$ denotes reversely transported sample $\bm{x}_1$ from time $1$ to $t$.  We denote cluster $\mathcal{C}_k$ as a set of data samples whose clustering index is $k$.  Given $K$ clusters $\{\mathcal{C}_k\}_{k=1}^K$, we obtain source samples $\hat{X}_{0, k} = \{\hat{\bm{x}}_0 | \bm{x}_1 \in \mathcal{C}_k\}$ of every data sample within cluster $\mathcal{C}_k$.  We approximate their source distribution $p_{0, k}$ as Gaussian based on estimated mean and covariance:
+\begin{align}
+&\bm{\mu}_{0, k} = \frac{1}{|\hat{X}_{0, k}|}\sum_{\hat{\bm{x}}_0 \in \hat{X}_{0, k}} \hat{\bm{x}}_0, \label{eq:cluster_mean}\\
+&\bm{\Sigma}_{0, k} = \frac{1}{|\hat{X}_{0, k}|} \sum_{\hat{\bm{x}}_0 \in \hat{X}_{0, k}} (\hat{\bm{x}}_0 - \bm{\mu}_{0, k})(\hat{\bm{x}}_0 - \bm{\mu}_{0, k})^\top, \\
+&p_{0, k}(\bm{x}) = \mathcal{N}(\bm{x}; \bm{\mu}_{0, k}, \bm{\Sigma}_{0, k}).
+\label{eq:cluster_cov}
+\end{align}
+
+\paragraph{Extension to Non-fixed Clustering.}
+So far, identifying cluster-wise source distributions assumes a fixed set of clusters, which may not hold in some applications. For example, in vision-conditioned robot policies, treating each observation as a cluster causes the number of clusters to grow during rollout. To address this, we introduce a learning-based module that predicts the source distribution for each cluster. See the Supplementary Material for additional details.
+
+\begin{algorithm}[t]
+\caption{Constructing the cluster-wise vector field}
+\label{algo:init-sources}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Trained FM model $\bm{v}_\theta$ and $K$ clusters $\{\mathcal{C}_k\}_{k=1}^K$.
+\FOR{$k = 1$ to $K$}
+    \STATE Retrieve source samples with reverse ODE:
+    \STATE $\quad \hat{X}_{0, k} \leftarrow \{\bm{x}_{1} - \int_0^1 \bm{v}_\theta(\hat{\bm{x}}_t, t) \, \mathrm{d}t | \bm{x}_{1} \in \mathcal{C}_k\}$
+    \STATE Estimate source distributions:
+    \STATE $\quad n_k \leftarrow |\hat{X}_{0, k}|$
+    \STATE $\quad \bm{\mu}_{0, k} \leftarrow \frac{1}{n_k}\sum_{\hat{\bm{x}}_0 \in \hat{X}_{0, k}} \hat{\bm{x}}_0$
+    \STATE $\quad \bm{\Sigma}_{0, k} \leftarrow \frac{1}{n_k} \sum_{\hat{\bm{x}}_0 \in \hat{X}_{0, k}} (\hat{\bm{x}}_0 - \bm{\mu}_{0, k})(\hat{\bm{x}}_0 - \bm{\mu}_{0, k})^\top$
+    \STATE $\quad p_{0, k}(\bm{x}) \leftarrow \mathcal{N}(\bm{x}; \bm{\mu}_{0, k}, \bm{\Sigma}_{0, k})$
+    \STATE Draw source samples $X_{0,k} \leftarrow \{\bm{x}_{0} \mid \bm{x}_{0} \sim p_{0,k}\}$
+    \STATE Cluster-wise OT map: $\pi_k \leftarrow \text{OT}(X_{0,k}, \mathcal{C}_k)$
+\ENDFOR
+\STATE \textbf{Output:} Cluster-wise source distributions $\{p_{0,k}\}_{k=1}^K$ and OT maps $\{\pi_{k}\}_{k=1}^K$.
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Approximating OT within Each Cluster.}
+To enforce straight paths, \method{} next updates the target vector field by calculating separate OT maps between each cluster of data samples and their assigned source distributions.  Although exact solution of cluster-wise OT maps remains computationally intractable, our method reduces the number of source-target samples, thereby making batch-wise approximation more feasible.  Specifically, for cluster $\mathcal{C}_k$, we draw a set of source samples $X_{0,k} = \{\bm{x}_{0} \mid \bm{x}_{0} \sim p_{0,k}\}$ from estimated source distributions $p_{0,k}$ and calculate the OT map $\pi_k$ between source samples $X_{0,k}$ and data samples $\mathcal{C}_k$ based on Eqn.~\ref{eqn:ot}.  These cluster-wise OT maps $\{\pi_k\}_{k=1}^K$ jointly, inherently composes a vector field (Eqn.~\ref{eqn:marginal_vecfield}), which the FM model is later optimized to regress.  The detailed procedure of constructing cluster-wise vector field is presented in Algorithm~\ref{algo:init-sources}.
+
+
+\begin{algorithm}[t]
+\caption{Training conditional model for non-fixed condition in robot policy}
+\label{algo:non-fixed-init-sources}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Trained FM model $\bm{v}_\theta$, initialized conditional model $\phi$, offline dataset $\mathcal{D}$ with $\{(c_k, X_{1,k})\}_{k=1}^K$, batch size $M$, training steps $L$.
+
+\FOR{$l = 1$ to $L$}
+    \STATE Initialize minibatch: $B \leftarrow \{\}$
+    \FOR{$m = 1$ to $M$}
+        \STATE Sample $(c_k, \bm{x}_1)$ from dataset $\mathcal{D}$
+        \STATE $\bm{x}_0 \sim \mathcal{N}(\bm{\mu}_\phi(c_k), \bm{\sigma}^2_\phi(c_k)I)$
+        \STATE Compute log-likelihood $\log p_\phi(\bm{x}_0 \mid c_k)$
+        \STATE Roll out FM: $\hat{\bm{x}}_1 \leftarrow \operatorname{ODESolver}(\bm{v}_\theta, \bm{x}_0, c_k)$
+        \STATE $V \leftarrow \exp(-\operatorname{MSE}(\hat{\bm{x}}_1, \bm{x}_1))$
+        \STATE $\hat{A} \leftarrow V - \mathbb{E}_{p_k}[V]$
+        \STATE Append to minibatch: $B \leftarrow B \cup \{(c_k, \bm{x}_0, \hat{A}, \log p_\phi(\bm{x}_0 \mid c_k)\}$
+        
+    \ENDFOR
+    \STATE Optimize $\phi$ according to minibatch with PPO. 
+    
+\ENDFOR
+\STATE \textbf{Output:} Trained conditional model $\phi$.
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[t]
+\caption{Fine-tuning FM model for non-fixed condition in robot policy}
+\label{algo:non-fixed-train-fm}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} FM model $\bm{v}_\theta$, conditional model $\phi$, batch size $M$, training steps $L$, offline dataset $\mathcal{D} = \{(c_k, X_{1,k})\}_{k=1}^K$.
+\FOR{$l = 1$ to $L$}
+    \STATE Initialize minibatch: $B \leftarrow \{\}$
+    \FOR{$m = 1$ to $M$}
+        \STATE Sample batch data  $(c_k, \bm{x}_1) \sim \mathcal{D}$
+        \STATE $\bm{x}_0 \sim \mathcal{N}(\bm{\mu}_\phi(c_k), \bm{\sigma}^2_\phi(c_k)I)$
+        \STATE Append to minibatch: $B \leftarrow B \cup \{(\bm{x}_0, \bm{x}_1)\}$
+    \ENDFOR
+    \STATE $\mathcal{L}_{\textsf{CFM}}(\theta) = \mathbb{E}_{t, (\bm{x}_0, \bm{x}_1) \sim B} \| \bm{v}_\theta(\bm{x}_t, t) - (\bm{x}_{1} - \bm{x}_{0}) \|_2^2$
+    \STATE $\theta \leftarrow \theta - \gamma \nabla_\theta \mathcal{L}_{\textsf{CFM}}(\theta)$
+\ENDFOR
+\STATE \textbf{Output:} Updated FM model $\bm{v}_\theta$.
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[t]
+\caption{Sampling for non-fixed condition in robot policy}
+\label{algo:non-fixed-sample}
+\begin{algorithmic}[1] 
+\STATE \textbf{Input:} Conditional model $\phi$, FM model $\bm{v}_\theta$, condition $c_k$, number of sampling steps $T$.
+\STATE Draw source sample $\bm{x} \sim \mathcal{N}(\bm{\mu}_\phi(c_k), \bm{\sigma}^2_\phi(c_k) I)$
+\FOR{$t=0$ to $T-1$}
+    \STATE $\bm{x} \leftarrow \bm{x} + \bm{v}_\theta(\bm{x}, \frac{t}{T}) \cdot \frac{1}{T}$
+\ENDFOR
+\STATE \textbf{Output:} Generated target sample $\bm{x}$.
+\end{algorithmic}
+\end{algorithm}
+
+\begin{table*}[t]
+    \centering
+    \resizebox{\linewidth}{!}{
+    \begin{tabular}{l|c|cc|cc|cc}
+        \toprule
+        \multirow{2.5}{*}{Dataset: 2D Examples} & \multirow{2.5}{*}{NFE} & \multicolumn{2}{c}{Mixture of 5-Gaussian} & \multicolumn{2}{|c}{Two Moon} & \multicolumn{2}{|c}{Checker Board} \\
+        % ~ & ~ & Wasserstein distance & Curvature & Wasserstein distance & Curvature & Wasserstein distance & Curvature \\
+        \cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+        ~ & ~ & Wasserstein$^2$ & Curvature & Wasserstein$^2$ & Curvature & Wasserstein$^2$ & Curvature \\
+        \midrule
+        Rectified Flow~\cite{liu2022flow} & 100 & 0.5421 & 0.0316 & 0.1006 & 0.0111 & 0.3900 & 9.1946 \\
+        OT-CFM~\cite{tong2024improvinggeneralizingflowbasedgenerative} & 100 & 0.6582 & 0.0104 & 0.1074 & 0.0020 & 0.3188 & 0.1741 \\
+        MeanFlow~\cite{geng2025mean} & 1 & 0.7612 & 0.9170 & 0.1233 & - & 0.9170 & - \\
+        COT-FM (Ours) & 100 & \textbf{0.1995} & \textbf{0.0084} & \textbf{0.0266} & \textbf{0.0016} & \textbf{0.2550} & \textbf{0.1505} \\
+        \bottomrule
+    \end{tabular}
+    }
+    \caption{\textbf{2D synthetic data distributions.} COT-FM outperforms all baselines in both Wasserstein distance and curvature.}
+    \label{tab:toy_example}
+\end{table*}
+
+\subsection{Optimizing FM Models}
+The optimization stage follows the standard FM training procedure.  As detailed in Algorithm~\ref{algo:train-fm}, we compose a minibatch by randomly sampling source-target pairs based on pre-computed cluster-wise OT maps $\{\pi_k\}_{k=1}^K$.  First, we randomly draw cluster index $k$ with a probability proportional to the cluster size $\frac{|\mathcal{C}_k|}{\sum_{j=1}^K |\mathcal{C}_j|}$, followed by sampling a source-target sample pair with the corresponding OT map: $(\bm{x}_{0}, \bm{x}_{1}) \sim \pi_k$.  Secondly, we sample time step $t$ from a uniform distribution $\mathcal{U}(0, 1)$, and calculate the linear interpolation $\bm{x}_t=(1-t)\bm{x}_0 + t \bm{x}_1$.  Lastly, the FM model is optimized to regress the constructed vector field via the conditional flow-matching loss $\mathcal{L}_{\textsf{CFM}}$ (Eqn.~\ref{eqn:cfm_loss}).
+
+
+\subsection{Alternating Optimization and Sampling} \label{sec:alternative_training}
+Starting with a pre-trained FM model, \method{} alternates between refining cluster-wise target vector field and updating the FM model.  Empirically, we find that the model performance converges within a small number of alternation rounds.  Since \method{} does not alter the FM architecture, it preserves the standard inference procedure. The only modification lies in the initialization step: whereas the original FM model samples an initial source point from a single global source distribution, \method{} first samples a cluster index $k$ and then draws the initial sample from the corresponding source distribution $p_{0,k}$. The cluster index $k$ is sampled according to the probability $\frac{|\mathcal{C}_k|}{\sum_{j=1}^K |\mathcal{C}_j|}$, where $|\mathcal{C}_k|$ denotes the number of samples in cluster $k$, for a multinomial distribution.  
+Other sampling methods are described in Section~\ref{abl:sample_method}. The full generation process is summarized in Algorithm~\ref{algo:sample}.
+
+\section{Experiments}
+\label{sec:experiments}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/checker_board.pdf}
+    \caption{\textbf{Visualization of 2D checkerboard data under different methods.} Blue points denote the source distribution, gray points the target distribution, and orange points the generated samples.}
+    \label{fig:checker_board}
+\end{figure}
+
+We evaluate \method{} under the following setups: unconditional 2D point cloud generation, unconditional and conditional image generation on CIFAR-10 and ImageNet, and text-conditional robotic manipulation on LIBERO. In addition, we perform an extensive ablation study to assess the contribution of each model component.
+
+\subsection{Unconditional 2D Point Cloud Generation}
+To preliminarily validate our idea, we design a simple benchmark for unconditional 2D point cloud generation.  We consider three types of data distributions: a mixture of 5 Gaussians, two moons, checkerboard.
+
+We compare against the following baseline methods: (1) Rectified Flow~\cite{liu2022flow}, which uses random couplings; (2) OT-CFM~\cite{tong2024improvinggeneralizingflowbasedgenerative}, which uses batch-wise optimal couplings; (3) MeanFlow~\cite{geng2025mean}, which uses random couplings and learns an average velocity field to skip sampling.  All baseline models use a standard Gaussian source distribution $p_0(\bm{x}) = \mathcal{N}(\bm{x}; \bm{0}, \bm{I})$.  For OT-CFM and \method{}, we use the same backbone FM model as Rectified Flow.  We apply the K-means algorithm to segment data samples into 5 clusters, and perform two alternation cycles during training.
+
+Following its typical setup, MeanFlow generates data with $1$ sampling step, while others use $100$ steps.  To evaluate model performance, we consider two metrics: \textit{Wasserstein distance} and \textit{curvature}.  The former measures how close the generated distribution is to the target distribution, and the latter quantifies the straightness of the learned flows.
+
+We present our quantitative results in Table~\ref{tab:toy_example}, \method{} outperforms all baselines significantly.  It achieves the smallest Wasserstein distance--$0.1995$, $0.0266$, $0.2550$ compared to $0.5421$, $0.1006$, $0.3900$, and the least curvature--$0.0084$, $0.0016$, $0.1505$ compared to $0.0104$, $0.0020$, $0.1741$, of the second best method on the four types of data distributions.  We show qualitative results in Fig.~\ref{fig:teaser} and Fig.~\ref{fig:checker_board}.  Our generated 2D point cloud is much closer to the original data distributions than others.  Notably, we observe that the learned flows of MeanFlow remain curved and its generated samples deviate from the data distributions.  These results support our proposition that cluster-wise OT enhances generation quality of FM models, and shortcut models only accelerate but do not enhance quality of data generation.  Additional details are provided in the Supplementary Material.
+
+\begin{table}[t]
+\centering
+\begin{adjustbox}{width=\linewidth}
+\begin{tabular}{l|cccc}
+    \toprule
+    Dataset: CIFAR-10 & 1-step & 2-step & 10-step & 50-step \\
+    \midrule
+    Rectified Flow~\cite{liu2022flow} &  &  &  &  \\
+    \quad random coupling & 378.0 & 173 & 12.6 & 4.45  \\
+    \quad + clustering & 296.0 & 107 & 10.1 & 4.19 \\
+    \quad OT-CFM~\cite{tong2024improvinggeneralizingflowbasedgenerative} & 226.0 & 82.2 & 10.6 & 4.78 \\
+    \quad \method{} (Ours) & \textbf{205.0} & \textbf{59.1} & \textbf{8.23} & \textbf{3.97} \\
+    \midrule
+    MeanFlow~\cite{geng2025mean} &  &  &  &  \\
+    \quad random coupling & 2.92 & 2.88 &  - & - \\
+    \quad \method{} (Ours) & \textbf{2.60} & \textbf{2.53} & - & - \\
+    \bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{\textbf{Unconditional image generation on CIFAR-10~\cite{krizhevsky2009learning}.} \method{} improves generation quality across different flow matching baselines and sampling steps. Measured in FID (lower is better).}
+\label{tab:cifar10}
+\end{table}
+
+\subsection{Unconditional Image Generation}
+
+Next, we evaluate \method{} on the more challenging task of unconditional image generation on CIFAR-10~\cite{krizhevsky2009learning}, which contains 50,000 training images of resolution $32 \times 32$.  We compare \method{} against three baseline methods: Rectified Flow, OT-CFM, and MeanFlow. Given that \method{} is model-agnostic, we integrate it with Rectified Flow and MeanFlow, and evaluate each resulting model independently against its original counterpart.
+
+For clustering images, we first encode an image into a latent feature vector using a self-supervised representation learning framework--DINO~\cite{caron2021emergingpropertiesselfsupervisedvision}, then apply K-Means algorithm to segment all training images into $100$ clusters.  It has been shown that clusters derived from such self-supervised features closely correspond to image categories~\cite{wu2018unsupervised,oquab2023dinov2}. The clustering result is shown in Fig.~\ref{fig:cifar10_viz_finetune}(a).
+
+We adopt Fréchet Inception Distance (FID)~\cite{heusel2018ganstrainedtimescaleupdate} as the evaluation metric, which measures the similarity between generated data and real data distribution in the latent feature space~\cite{szegedy2015going}.  Lower FID indicates better generation quality. See the Supplementary Material for architecture, training, and evaluation details.
+
+Table~\ref{tab:cifar10} summarizes the results. When using the same backbone FM model as Rectified Flow, introducing cluster-wise random coupling already yields an improvement over the original Rectified Flow without clustering, achieving an absolute performance gain of $82$ in FID.  Building on this, computing batch-wise optimal coupling within each cluster further enhances performance, yielding an additional FID reduction of 91 with a single sampling step.  Remarkably, our \method{} consistently enhances the FM model when using the same backbone as MeanFlow.  It reduces FID from $2.92$ to $2.60$ and $2.88$ to $2.53$ with one and two sampling steps. As shown in Fig.~\ref{fig:cifar10_viz}, our method produces noticeably clearer 1-step generations than Rectified Flow and improves the visual quality over OT-CFM on several object categories. For the 50-step generation setting, COT-FM still achieves a lower FID, reducing it from $4.45$ to $3.97$. These results highlight the benefit of incorporating sample clustering and optimal coupling into the training pipeline of FM models.
+
+\begin{table}[t]
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{l|l|ccccc}
+    \toprule
+    Model & Method & 100 & 50 & 10 & 2 & 1 \\
+    \midrule
+    \multirow{2}{*}{SiT-B/2} & Rectified Flow~\cite{liu2022flow} & 5.82 & 5.86 & 8.25 & 119.57 & 264.36 \\
+     & COT-FM (Ours) & \textbf{5.11} & \textbf{5.28} & \textbf{7.52} & \textbf{101.66} & \textbf{231.99} \\
+    \midrule
+    \multirow{2}{*}{SiT-B/4} & Rectified Flow~\cite{liu2022flow} & 8.30 & 8.39 & 11.16 & 134.99 & 276.13 \\
+     & COT-FM (Ours) & \textbf{7.65} & \textbf{7.81} & \textbf{9.87} & \textbf{114.10} & \textbf{241.18} \\
+    \bottomrule
+    \end{tabular}
+    }
+    \caption{\textbf{Conditional Image Generation on ImageNet 256$\times$256.} FID ($\downarrow$) at different NFE steps.}
+    \label{tab:imagenet}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \begin{minipage}{\linewidth}
+        \centering
+        \begin{tabular}{cc}
+        \centering
+        \tb{@{}l|c|cc@{}}{2.0}{
+            \toprule
+            Dataset: LIBERO & NFE & Spatial & Long \\
+            \midrule
+            FLOWER~\cite{reuss2025flower} & 4 & 97.1\% & 93.5\% \\
+            \midrule
+            FLOWER~\cite{reuss2025flower} & 1 & 94.2\% & 87.3\% \\
+            2-Rectified Flow~\cite{liu2022flow} & 1 & 95.7\% & 91.5\%\\
+            \method{} (ours) & 1 & 96.1\% & \textbf{94.5}\% \\
+            \bottomrule
+        }
+        \end{tabular}
+        \captionof{table}{\textbf{Robotic manipulation on LIBERO benchmarks~\cite{liu2023libero}.} \method{} achieves single-step performance comparable to FLOWER's 4-step generation while outperforming other single-step baselines. Measured in success rate (higher is better).}
+        \label{tab:robot}
+    \end{minipage}
+    
+    \vspace{30pt}
+    
+    \begin{minipage}{\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/libero.pdf}
+        \caption{Comparison of two trajectories under the same initial setting in LIBERO Long. Our method successfully places the mug into the microwave and closes the door, while FLOWER fails to insert the mug smoothly and gets stuck inside the microwave.}
+        \label{fig:robot}
+    \end{minipage}
+    \vspace{-15pt}
+\end{figure}
+
+\subsection{Conditional Image Generation}
+We further evaluate \method{} on conditional image generation using ImageNet~\cite{deng2009imagenet} at 256$\times$256 resolution. We adopt SiT-B/2 and SiT-B/4~\cite{ma2024sit} as backbone architectures. In the conditional setting, we group training samples by class labels, treating each class as a cluster for constructing cluster-wise source distributions. For comparison, we train COT-FM by continuing from a pre-trained 1-RF model.
+
+As shown in Table~\ref{tab:imagenet}, \method{} consistently improves FID across all NFE settings for both architectures. Notably, the improvement is more pronounced in the low-NFE regime, where straighter transport paths are particularly beneficial. These results demonstrate that our method scales effectively
+to high-resolution, class-conditional benchmarks without modification to the core algorithm.
+
+\subsection{Text-conditional Robotic Action Generation}
+We evaluate \method{} on text-conditional robotic action generation using the LIBERO benchmark~\cite{liu2023libero}, which provides tabletop manipulation tasks paired with natural-language instructions. This simulation benchmark consists of tabletop manipulation tasks involving a Franka robot arm~\cite{gaz2019dynamic} and 3D object assets. The goal is to generate robot actions that accomplish the manipulation task conditioned on textual instructions. LIBERO comprises multiple task suites; we evaluate on LIBERO-Spatial and LIBERO-Long. The former emphasizes spatial variations, while the latter focuses on long-horizon task execution.
+
+We compare against two baselines: (1) FLOWER~\cite{reuss2025flower}, a text-conditioned FM policy trained with random couplings, and (2) Reflow~\cite{liu2022flow}, which employs rectified couplings between source and generated samples.  Both \method{} and 2-Rectified Flow use the same backbone as FLOWER for fair comparison.  We evaluate performance using the \textit{success rate}, defined as the proportion of successful task completions across all evaluation trials.
+
+Results are summarized in Table~\ref{tab:robot}. Using only a single sampling step, \method{} outperforms all baseline methods, achieving absolute gains of 0.4\% on LIBERO-Spatial and 3\% on LIBERO-Long over the second-best method. Remarkably, \method{} with one sampling step surpasses FLOWER with four steps. This improvement arises because cluster-wise optimal couplings produce straighter vector fields than random couplings, enabling the FM model to learn more accurate flows. See Fig.~\ref{fig:robot} for rollout visualizations.
+
+
+\subsection{Ablation Analysis}
+
+We conduct ablation studies on CIFAR-10 to analyze design choices of \method{}. All experiments use 1-RF with 50-step generation unless otherwise specified.
+
+
+\paragraph{Alternating Iterations.} We examine how many alternating optimization cycles are needed. Starting from a pre-trained Rectified Flow model, we alternate between training the flow matching model with cluster-wise optimal transport and refining source distributions through reverse ODE integration. Table~\ref{tab:ablation}(a) shows that each iteration progressively reduces FID: 4.45 for the initial model improves to 4.23, 3.97, and 4.17 after 1, 2, and 3 iterations respectively. The diminishing returns suggest that 2 iterations suffice for best performance.
+
+\paragraph{Test Set Generalization.}
+Since \method{} modifies source distributions based on training data clusters, we verify it does not overfit. Table~\ref{tab:ablation}(b) compares FID on training versus held-out test images. It is expected that test dataset has higher FID than train dataset due to only 10000 images in CIFAR-10 test dataset. Both Rectified Flow baseline and \method{} show consistent performance between train and test sets—4.45, 8.55 for Rectified Flow and 3.97, 8.19 for \method{}—confirming that cluster-wise source distributions generalize without degrading quality on unseen data.
+
+\paragraph{Different Cluster Sample Probabilities.}~\label{abl:sample_method}
+Table~\ref{tab:ablation}(c) compares FID using different methods to sample cluster labels. We show that using the proportional to cluster size as a sampling probability achieves better performance than uniform sampling. We argue that this is because aligning the dataset distribution requires assigning higher sampling frequency to larger clusters, which help maintain data balance and improve FID.
+
+\begin{table}[t]
+\centering
+\small
+
+% (a) and (b) side by side
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lc@{\hspace{2.5em}}|lc}
+    \toprule
+    \multicolumn{2}{c|}{\textbf{(a) Alternating iterations}} & \multicolumn{2}{c}{\textbf{(b) Test set generalization}} \\
+    \midrule
+    Method & FID & Method & FID \\
+    \midrule
+    Rectified Flow (0 iter.) & 4.45 & Rectified Flow (train) & 4.45 \\
+    \method{} (1 iter.) & 4.23 & Rectified Flow (test) & 8.55 \\
+    \method{} (2 iter.) & \textbf{3.97} & \method{} (train) & \textbf{3.97} \\
+    \method{} (3 iter.) & 4.17 & \method{} (test) & \textbf{8.19} \\
+    \bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\vspace{10pt}
+
+% (c) below
+\setlength{\tabcolsep}{30pt}
+\begin{tabular}{lc}
+    \toprule
+    \multicolumn{2}{c}{\textbf{(c) Different cluster sampling probabilities}} \\
+    \midrule
+    Method & FID \\
+    \midrule
+    Uniform & 4.26 \\
+    Proportional to cluster size & \textbf{3.97} \\
+    \bottomrule
+\end{tabular}
+
+\caption{Ablation studies on CIFAR-10 at 50-step generation. (a) Additional alternating iterations progressively reduce FID. (b) \method{} maintains consistent performance on held-out test data. (c) Size-proportional cluster sampling outperforms uniform sampling.}
+\label{tab:ablation}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/checker_board.pdf}
+    \caption{\textbf{Visualization of 2D checkerboard data under different methods.} Blue points denote the source distribution, gray points the target distribution, and orange points the generated samples.}
+    \label{fig:checker_board}
+\end{figure}
+
+
+\section{Conclusions}
+We present \method{}, a general framework that reshapes Flow Matching probability paths for faster and more reliable generation. By clustering data and assigning each cluster its own reversed source distribution, COT-FM straightens trajectories normally distorted by random or batch-wise couplings. This yields a more accurate vector field without altering model architectures or training pipelines. As a plug-and-play method, COT-FM consistently accelerates sampling while improving quality across 2D synthetic data, image generation, and robotic manipulation.
+
+\paragraph{Limitations and Future Work.}
+While COT-FM improves flow straightness and sampling efficiency across diverse domains, challenges remain in scaling and generalizing the approach. The reverse ODE step can become inefficient as sample size grows, and our approach depends on clustering quality. The behavior of cluster-wise transport—particularly how local OT captures global structure and why alternating refinement converges within one or two cycles—remains not fully understood. Exploring more scalable clustering strategies and lighter source-distribution estimators offers promising directions for extending COT-FM.
+
+\clearpage
+{
+    \small
+    \section*{Acknowledgment}
+        This work was supported in part by the AMD--ITRI Joint Laboratory, which provided MI300X high-performance computing resources and technical support for the execution and validation of this research. This work was also supported by the AMD University Program AI \& HPC Cluster. We further acknowledge Kuo-Guang Tsai for his technical support on the AMD system cluster infrastructure. This research was also supported by the National Science and Technology Council (NSTC), Taiwan, under Grants 114-2222-E-002-008, 114-2221-E-002-182-MY3, 113-2221-E-002-201, and 115-2634-F-002-001.
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{bibs/main}
+}
+
+\end{document}
