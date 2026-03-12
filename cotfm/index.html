@@ -80,6 +80,10 @@
       background: none !important; color: #1d4ed8 !important; transform: none !important;
     }
     .publication-links .external-link.button .icon { display: none !important; }
+    .publication-links .external-link.button.no-link {
+      color: #111 !important; text-decoration: none !important;
+      cursor: default !important; pointer-events: none !important;
+    }
 
     /* ── Layout ── */
     .content-section { padding: 3rem 1.5rem; }
@@ -238,14 +242,20 @@
       <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;&nbsp; † Corresponding author</p>
       <div class="publication-links" style="margin-top:1.25rem;">
         <span class="link-block">
-          <a href="https://arxiv.org/abs/2501.00000" target="_blank" class="external-link button is-dark">
+          <!-- TODO: replace with official ArXiv link when available -->
+          <a href="#" class="external-link button is-dark no-link">
+            <span>ArXiv</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a href="pdf/COTFM.pdf" target="_blank" class="external-link button is-dark">
             <span>Paper</span>
           </a>
         </span>
         <span class="link-block">
-          <!-- TODO: uncomment when codebase is ready: href="https://github.com/EmbodiedAI-NTU/COT-FM" -->
-          <a href="#" class="external-link button is-dark" onclick="return false;">
-            <span>Code (coming soon)</span>
+          <!-- TODO: replace with GitHub link when codebase is ready -->
+          <a href="#" class="external-link button is-dark no-link">
+            <span>Code</span>
           </a>
         </span>
       </div>
