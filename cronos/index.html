@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRONOS: Benchmarking Multi-Task Robotic Manipulation for Reset-Free RL</title>
+  <meta name="description" content="CRONOS is a simulation benchmark for studying reset-free multi-task RL under long-horizon interactions and constrained reset budgets.">
+  <meta name="keywords" content="reset-free reinforcement learning, multi-task RL, robotic manipulation, benchmark, OpenVLA, simulation, NTU">
+  <meta name="author" content="Po-Yi Wu, Djengo Cyun-Jyun Fang, Dian Cheng, Tsung-Wei Ke">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="CRONOS: Benchmarking Multi-Task Robotic Manipulation for Reset-Free RL At Scale">
+  <meta property="og:description" content="A simulation benchmark for studying reset-free multi-task reinforcement learning under constrained reset budgets.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dexman/static/css/bulma.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/index.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+  <style>
+    /* ── Fonts ── */
+    body, p, li, .hero, .section,
+    .title, .subtitle, h1, h2, h3, h4, h5, h6,
+    .body-text, .publication-title {
+      font-family: 'Libre Baskerville', Georgia, serif !important;
+    }
+    .sans, .publication-authors, .publication-affiliations,
+    .publication-links, .eql-cntrb, .fig-cap, .table-caption,
+    button, pre, code {
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+    }
+
+    /* ── Header ── */
+    .publication-header .hero-body { padding: 5rem 1.5rem 3.5rem; }
+
+    .publication-title {
+      font-size: clamp(2.0rem, 4.5vw, 2.9rem) !important;
+      line-height: 1.15 !important;
+      margin-bottom: 0.7rem !important;
+      color: #111 !important;
+    }
+    .publication-venue {
+      background: none !important; border: none !important; padding: 0 !important;
+      color: #555 !important; font-size: 1.3rem !important; font-weight: 600 !important;
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+      display: block; margin: 0.35rem auto 1.2rem !important;
+    }
+    .publication-authors {
+      color: #2563eb !important; font-size: 1.2rem !important;
+      font-weight: 400 !important; gap: 1.6rem !important; margin-top: 0 !important;
+    }
+    .publication-authors a { color: #2563eb !important; }
+    .publication-authors .author-block::after { content: '' !important; }
+    .publication-affiliations {
+      font-size: 1.1rem !important; color: #555 !important;
+      margin-top: 0.35rem !important; gap: 0 !important;
+    }
+    .publication-affiliations .affiliation-block::after { content: '' !important; }
+    .eql-cntrb {
+      font-size: 0.95rem !important; color: #888 !important; margin-top: 0.25rem !important;
+    }
+    .publication-links { margin-top: 1.2rem !important; gap: 0 !important; }
+    .publication-links .external-link.button {
+      background: none !important; border: none !important; box-shadow: none !important;
+      color: #2563eb !important; font-family: 'Source Sans 3', Arial, sans-serif !important;
+      font-size: 1.15rem !important; font-weight: 600 !important; padding: 0.25rem 1rem !important;
+      text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #93c5fd;
+    }
+    .publication-links .external-link.button:hover {
+      background: none !important; color: #1d4ed8 !important; transform: none !important;
+    }
+    .publication-links .external-link.button .icon { display: none !important; }
+
+    /* ── Layout ── */
+    .content-section { padding: 3rem 1.5rem; }
+    .content-section.shaded {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .content-section.white { background: #ffffff; }
+    .content-block { max-width: 780px; margin: 0 auto; }
+    .content-block-wide { max-width: 960px; margin: 0 auto; }
+
+    .section-heading {
+      font-size: 1.65rem; font-weight: 700; color: #111;
+      margin-bottom: 1.4rem; padding-bottom: 0.55rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* ── Body text ── */
+    .body-text { font-size: 1.1rem; line-height: 1.85; color: #111; }
+    .body-text p { margin-bottom: 1rem; }
+
+    /* ── Challenge cards ── */
+    .challenge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.2rem;
+      margin-top: 1.5rem;
+    }
+    .challenge-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+    }
+    .challenge-card .challenge-label {
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #2563eb;
+      margin-bottom: 0.4rem;
+    }
+    .challenge-card .challenge-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #111;
+      margin-bottom: 0.5rem;
+    }
+    .challenge-card p {
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      font-size: 0.95rem;
+      color: #444;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* ── Math ── */
+    .math-block {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 1rem 1.5rem; margin: 1.2rem 0; overflow-x: auto; text-align: center;
+    }
+
+    /* ── Figures ── */
+    .fig-wrap { margin: 1.5rem 0; }
+    .fig-wrap img {
+      width: 100%; border-radius: 6px; border: 1px solid #e2e8f0; display: block;
+    }
+    .fig-cap {
+      font-size: 0.92rem; color: #444; line-height: 1.6; margin-top: 0.6rem;
+    }
+    .fig-cap strong { color: #111; }
+
+    /* ── Findings ── */
+    .finding-list { list-style: none; padding: 0; margin: 1rem 0; }
+    .finding-list li {
+      display: flex; gap: 0.85rem; align-items: flex-start;
+      padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; font-size: 1.05rem; line-height: 1.7;
+    }
+    .finding-list li:last-child { border-bottom: none; }
+    .finding-num {
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      font-size: 0.8rem; font-weight: 700; color: #2563eb;
+      background: #eff6ff; border-radius: 4px; padding: 0.15rem 0.45rem;
+      white-space: nowrap; margin-top: 0.2rem; flex-shrink: 0;
+    }
+
+    /* ── Results tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    .results-table {
+      width: 100%; border-collapse: collapse; font-size: 1.05rem;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      color: #111; font-variant-numeric: tabular-nums;
+    }
+    .results-table thead tr:first-child th { border-top: 2px solid #111; }
+    .results-table thead tr:last-child { border-bottom: 1.5px solid #555; }
+    .results-table tbody { border-bottom: 2px solid #111; }
+    .results-table th {
+      font-weight: 700; padding: 0.45rem 0.9rem; text-align: center;
+      background: none; white-space: nowrap; color: #111;
+    }
+    .results-table th:first-child { text-align: left; }
+    .results-table th.cmidrule { border-bottom: 1px solid #555; }
+    .results-table th.no-cmidrule { border-bottom: none; }
+    .results-table td { padding: 0.35rem 0.9rem; text-align: center; color: #111; border: none; }
+    .results-table td:first-child { text-align: left; }
+    .results-table .sep td { border-top: 1px solid #ccc; }
+    .results-table .group-row td {
+      font-weight: 600; padding-top: 0.6rem; padding-bottom: 0.1rem;
+      color: #333; font-size: 0.95rem;
+    }
+    .results-table .ours td { font-weight: 700; color: #111; background: #fefce8; }
+    .results-table .indent td:first-child { padding-left: 2rem; }
+    .check { color: #10b981; font-weight: 700; }
+    .dash { color: #999; }
+
+    /* ── BibTeX ── */
+    pre {
+      background: #f8fafc !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important; padding: 1.2rem 1.4rem !important;
+      font-size: 0.88rem !important; overflow-x: auto;
+      font-family: 'SF Mono', 'Monaco', monospace !important;
+    }
+    .copy-btn {
+      background: #2563eb; color: white; border: none;
+      border-radius: 5px; padding: 0.4rem 0.9rem;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #1d4ed8; }
+    .copy-btn.ok { background: #10b981; }
+
+    /* ── Scroll to top ── */
+    .scroll-to-top {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 44px; height: 44px;
+      background: #2563eb; color: white; border: none; border-radius: 50%;
+      cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .scroll-to-top.visible { opacity: 1; visibility: visible; }
+    .scroll-to-top:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+    hr.divider { border: none; border-top: 1px solid #e2e8f0; margin: 0; }
+    .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 2.5rem 1.5rem; }
+    .footer .content { color: #64748b; font-size: 0.9rem; font-family: 'Source Sans 3', Arial, sans-serif !important; }
+    .footer a { color: #2563eb; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<section class="hero publication-header">
+  <div class="hero-body">
+    <div class="container is-max-desktop has-text-centered">
+      <h1 class="publication-title">CRONOS: Benchmarking Multi-Task Robotic Manipulation<br>for Reset-Free Reinforcement Learning At Scale</h1>
+      <div class="publication-venue">Preprint &middot; March 2026</div>
+      <div class="publication-authors">
+        <span class="author-block">Po-Yi Wu<sup>*</sup></span>
+        <span class="author-block">Djengo Cyun-Jyun Fang<sup>*†</sup></span>
+        <span class="author-block">Dian Cheng</span>
+        <span class="author-block"><a href="https://twke18.github.io/" target="_blank">Tsung-Wei Ke</a></span>
+      </div>
+      <div class="publication-affiliations">
+        <span class="affiliation-block">National Taiwan University</span>
+      </div>
+      <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;·&nbsp; † Corresponding author</p>
+      <div class="publication-links" style="margin-top:1.25rem;">
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark" onclick="return false;">
+            <span>Arxiv</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark" onclick="return false;">
+            <span>Code (coming soon)</span>
+          </a>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TEASER ========== -->
+<section class="hero teaser" style="padding-bottom:0;">
+  <div class="hero-body" style="padding-bottom:2rem;">
+    <div class="container is-max-desktop">
+      <div class="fig-wrap">
+        <img src="figures/teaser.png" alt="CRONOS teaser: episodic vs reset-free multi-task RL">
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.6rem auto 0;text-align:center;">
+        <strong>Top:</strong> Common episodic multi-task RL isolates each task into separate scenes with frequent resets.
+        <strong>Bottom:</strong> CRONOS studies reset-free multi-task RL (RF-MTRL) where scenes are shared across tasks
+        and agents operate under a fixed reset budget.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ========== ABSTRACT ========== -->
+<div class="content-section">
+  <div class="content-block">
+    <h2 class="section-heading">Abstract</h2>
+    <div class="body-text">
+      <p>
+        Reinforcement learning (RL) is promising for adapting robot policies to unstructured real-world
+        environments. However, standard RL pipelines rely on episodic training with frequent scene resets,
+        which is impractical for real-world deployment due to the need for substantial human intervention.
+        We introduce <strong>CRONOS</strong> (<strong>C</strong>ontinual <strong>R</strong>obotic
+        <strong>O</strong>perations in <strong>N</strong>On-episodic <strong>S</strong>ettings),
+        a simulation benchmark for studying reset-free multi-task RL under long-horizon interactions
+        and constrained reset budgets.
+      </p>
+      <p>
+        To reflect realistic deployment, CRONOS leverages high-fidelity physics simulators, adopts
+        shared-scene multi-task settings, targets the adaptation of state-of-the-art robot policies,
+        and formalizes reset-free learning under a fixed reset budget. We show that naively fine-tuning
+        pre-trained policies fails in reset-free settings; however, these challenges can be mitigated
+        through intelligent reset allocation and by addressing biases in pre-trained models. Finally,
+        we demonstrate that reset-free training enhances long-horizon manipulation and improves
+        generalization to Held-out Configuration object configurations and task sequences.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== MOTIVATION ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">The Problem: Episodic Training at Scale</h2>
+    <div class="body-text">
+      <p>
+        Standard RL pipelines assume <em>episodic training</em>: after each episode, the environment is
+        reset to a canonical initial state. In simulation this is free, but in the real world it requires
+        significant human effort — repositioning objects, resetting the robot, re-staging the scene.
+        This bottleneck prevents RL from being deployed at scale in real-world robotic systems.
+      </p>
+      <p>
+        Existing reset-free RL benchmarks suffer from several limitations: outdated simulators with
+        large sim-to-real gaps, per-task isolated scenes that don't reflect real deployment, and
+        evaluation on policies trained from scratch rather than modern pre-trained VLAs.
+        <strong>CRONOS addresses all of these shortcomings.</strong>
+      </p>
+    </div>
+
+    <div class="columns is-vcentered" style="margin-top:1.5rem;gap:1rem;">
+      <div class="column">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.2rem 1.5rem;">
+          <p class="sans" style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;margin-bottom:0.5rem;">Standard Episodic RL</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;">
+            <li>Each task isolated in its own scene</li>
+            <li>Frequent human resets required</li>
+            <li>Doesn't scale to real-world deployment</li>
+            <li>Scene diversity demands intensive supervision</li>
+          </ul>
+        </div>
+      </div>
+      <div class="column">
+        <div style="background:#fff;border:2px solid #2563eb;border-radius:8px;padding:1.2rem 1.5rem;">
+          <p class="sans" style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2563eb;margin-bottom:0.5rem;">CRONOS: Reset-Free Multi-Task RL</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;">
+            <li>Shared scene across all tasks</li>
+            <li>Fixed reset budget, minimal intervention</li>
+            <li>Fine-tuning of state-of-the-art VLAs</li>
+            <li>High-fidelity simulator with sim-to-real transfer</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CRONOS BENCHMARK ========== -->
+<div class="content-section white">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">The CRONOS Benchmark</h2>
+
+    <div class="content-block">
+      <div class="body-text">
+        <p>
+          CRONOS is built upon SimplerEnv and its extension, which provides high-fidelity physics simulation
+          demonstrated to transfer to real-world settings with limited performance degradation. The benchmark
+          deploys an 8-DoF WidowX-250S robotic arm controlled via 6-DoF end-effector pose commands.
+        </p>
+        <p>
+          The key design choice: <strong>multiple objects share a single scene across all tasks</strong>.
+          In the base configuration, CRONOS places a ketchup bottle and a shovel in a scene with a plate
+          and a cloth, yielding four pick-and-place tasks: <em>"put the [object] on the [receptacle]."</em>
+          Objects and receptacles are randomized across 64 positions for training and evaluation.
+        </p>
+      </div>
+    </div>
+
+    <div style="max-width:780px;margin:1.5rem auto;display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" style="width:100%;border-radius:6px;border:1px solid #e2e8f0;">
+          <source src="cronos_viz/step_79.mp4" type="video/mp4">
+        </video>
+        <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Put toy bear on carpet (0–79 steps)</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" style="width:100%;border-radius:6px;border:1px solid #e2e8f0;">
+          <source src="cronos_viz/step_159.mp4" type="video/mp4">
+        </video>
+        <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Put toy bear on newspaper (80–159 steps)</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" style="width:100%;border-radius:6px;border:1px solid #e2e8f0;">
+          <source src="cronos_viz/step_239.mp4" type="video/mp4">
+        </video>
+        <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Put plastic bottle on carpet (160–239 steps)</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" style="width:100%;border-radius:6px;border:1px solid #e2e8f0;">
+          <source src="cronos_viz/step_319.mp4" type="video/mp4">
+        </video>
+        <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Put plastic bottle on newspaper (240–319 steps)</p>
+      </div>
+    </div>
+    <p class="fig-cap sans" style="max-width:780px;margin:0.2rem auto 0;text-align:center;">
+      Each clip continues directly from the previous scene without resets, illustrating a shared-scene reset-free rollout.
+    </p>
+
+    <div class="content-block" style="margin-top:1.5rem;">
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:0.8rem;color:#111;">Evaluation Dimensions</h3>
+      <div class="body-text">
+        <p>
+          CRONOS evaluates performance along two orthogonal axes:
+        </p>
+      </div>
+      <div class="math-block">
+        \[
+          \mathbb{D}(\mathbb{A}) = \sum_{t=0}^{T} \bigl(J(\pi^*) - J(\pi_t)\bigr)
+          \qquad \text{(Interaction Efficiency)}
+        \]
+      </div>
+      <div class="math-block">
+        \[
+          \mathbb{C}(\mathbb{A}) = \sum_{k=0}^{K} \bigl(J(\pi^*) - J(\pi_k)\bigr)
+          \qquad \text{(Reset Efficiency)}
+        \]
+      </div>
+      <div class="body-text">
+        <p>
+          Reset efficiency is critical for real-world deployment: scene resets are often significantly
+          more costly than individual environment interactions, and an algorithm must make the most of
+          each reset it consumes.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== CHALLENGES ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Five Research Challenges</h2>
+    <div class="body-text" style="margin-bottom:1rem;">
+      <p>CRONOS is designed to facilitate systematic study across five open research challenges in RF-MTRL:</p>
+    </div>
+    <div class="challenge-grid">
+      <div class="challenge-card">
+        <div class="challenge-title">Learning Under Varying Reset Budgets</div>
+        <p>How efficiently do algorithms learn under different levels of human intervention? CRONOS provides a reset-efficiency metric to enable systematic analysis.</p>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-title">Algorithm Design for Automatic Reset</div>
+        <p>When should a reset be triggered (detecting unrecoverable states)? How should it be executed (returning to high-value states)?</p>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-title">Biases in Pre-trained Policies</div>
+        <p>BC policies overfit to expert demonstration distributions. Under what conditions can RL effectively adapt these policies in reset-free, multi-task settings?</p>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-title">Impact of Learning Factors</div>
+        <p>Task ordering and curriculum learning substantially affect learning efficiency in reset-free settings, yet remain understudied in the RF-MTRL context.</p>
+      </div>
+      <div class="challenge-card" style="grid-column: span 1;">
+        <div class="challenge-title">Robustness to Distributional Shifts</div>
+        <p>CRONOS measures robustness along object-receptacle configurations and unseen task sequences, going beyond standard visual or semantic OOD settings.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KEY FINDINGS ========== -->
+<div class="content-section white">
+  <div class="content-block">
+    <h2 class="section-heading">Key Findings</h2>
+    <ul class="finding-list">
+      <li>
+        <span class="finding-num">F1</span>
+        <span><strong>Naive fine-tuning fails.</strong> Directly fine-tuning OpenVLA under reset-free settings (T=1280) yields only <strong>2.3%</strong> success rate, compared to <strong>89.7%</strong> with standard episodic training (T=80). VLAs overfit to fixed end-effector configurations seen in pre-training demonstrations.</span>
+      </li>
+      <li>
+        <span class="finding-num">F2</span>
+        <span><strong>Episodic end-effector reset is critical.</strong> Resetting the robot's end-effector (but not the scene) at episode boundaries recovers <strong>+30.3%</strong> absolute success rate, mitigating the distributional drift bias in pre-trained VLAs.</span>
+      </li>
+      <li>
+        <span class="finding-num">F3</span>
+        <span><strong>Curriculum learning provides the largest gain.</strong> Starting with frequent resets (T=320) and gradually reducing them (T=1280) improves success by <strong>+25.2%</strong> absolute, while requiring only 60% more resets than a non-curriculum baseline.</span>
+      </li>
+      <li>
+        <span class="finding-num">F4</span>
+        <span><strong>Heuristic task ordering matters.</strong> A cyclic task graph ordering that avoids consecutive same-object picks substantially outperforms random ordering, confirming that strategic task sequencing is a critical component of RF-MTRL.</span>
+      </li>
+      <li>
+        <span class="finding-num">F5</span>
+        <span><strong>RF-MTRL improves OOD generalization.</strong> When trained on limited configurations, non-episodic training yields substantially stronger generalization to held-out object-receptacle configurations and unseen task sequences compared to episodic baselines.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== RESULTS ========== -->
+<div class="content-section shaded">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">Results</h2>
+
+    <!-- Main ablation table -->
+    <div class="content-block" style="margin-bottom:3rem;">
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;color:#111;">RF-MTRL Approaches on CRONOS</h3>
+      <p class="sans" style="font-size:0.95rem;color:#555;margin-bottom:1rem;">
+        Success rate @ 1.3M interaction steps · 5 seeds · training object-receptacle configurations<br>
+        <span style="color:#666;">EER = Episodic End-effector Reset &nbsp;·&nbsp; CL = Curriculum Learning &nbsp;·&nbsp; LSR = Learned Scene Reset &nbsp;·&nbsp; HSR = Heuristic Scene Reset</span>
+      </p>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>T</th>
+              <th>EER</th>
+              <th>CL</th>
+              <th>LSR</th>
+              <th>HSR</th>
+              <th>Success Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="group-row">
+              <td colspan="6">Episodic baseline</td>
+            </tr>
+            <tr class="indent">
+              <td>80</td>
+              <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+              <td>0.897 ± 0.027</td>
+            </tr>
+            <tr class="group-row sep">
+              <td colspan="6">Reset-free baselines</td>
+            </tr>
+            <tr class="indent">
+              <td>1280</td>
+              <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+              <td>0.023 ± 0.030</td>
+            </tr>
+            <tr class="indent">
+              <td>1280</td>
+              <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+              <td>0.326 ± 0.179</td>
+            </tr>
+            <tr class="indent">
+              <td>1280</td>
+              <td class="check">✓</td><td class="check">✓</td><td class="dash">—</td><td class="dash">—</td>
+              <td>0.578 ± 0.054</td>
+            </tr>
+            <tr class="indent">
+              <td>1280</td>
+              <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td>
+              <td>0.580 ± 0.036</td>
+            </tr>
+            <tr class="indent ours">
+              <td>1280</td>
+              <td class="check">✓</td><td class="check">✓</td><td class="dash">—</td><td class="check">✓</td>
+              <td><strong>0.649 ± 0.090</strong></td>
+            </tr>
+            <tr class="indent">
+              <td>1280</td>
+              <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
+              <td>0.631 ± 0.065</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Learning efficiency figure placeholder -->
+    <div class="content-block" style="margin-bottom:3rem;">
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;color:#111;">Learning Efficiency Under Varying Reset Budgets</h3>
+      <div style="max-width:780px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;display:flex;flex-direction:row;align-items:center;gap:1rem;">
+        <img src="figures/Main_Experiment_ID.png" alt="Success rate vs. interaction steps" style="flex:1;min-width:0;display:block;max-width:calc(50% - 0.5rem);">
+        <img src="figures/Main_Experiment_ID_reset.png" alt="Success rate vs. number of scene resets" style="flex:1;min-width:0;display:block;max-width:calc(50% - 0.5rem);">
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.6rem auto 0;">
+        <strong>Left:</strong> Success rate vs. interaction steps. <strong>Right:</strong> Success rate vs. number of scene resets.
+        Non-episodic baselines achieve superior reset efficiency — reaching competitive success rates
+        with significantly fewer resets compared to the episodic baseline.
+      </p>
+    </div>
+
+    <!-- OOD generalization -->
+    <div class="content-block" style="margin-bottom:3rem;">
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;color:#111;">Robustness to Held-out Configuration Conditions</h3>
+
+      <!-- Single Position -->
+      <p style="font-size:1rem;font-weight:600;color:#333;margin-bottom:0.6rem;">OOD Object Configurations</p>
+      <div style="max-width:780px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;display:flex;flex-direction:row;align-items:center;gap:1rem;">
+        <div style="flex:1;min-width:0;">
+          <img src="figures/Single_Position_ID.png" alt="ID object configurations" style="width:100%;display:block;">
+          <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Training Configuration</p>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <img src="figures/Single_Position_OOD.png" alt="OOD object configurations" style="width:100%;display:block;">
+          <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Held-out Configuration</p>
+        </div>
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.6rem auto 2rem;">
+        When trained on a single configuration, the non-episodic method (T=320) shows substantially stronger OOD generalization than the episodic baseline.
+      </p>
+
+      <!-- Task Sequence -->
+      <p style="font-size:1rem;font-weight:600;color:#333;margin-bottom:0.6rem;">OOD Task Sequences</p>
+      <div style="max-width:780px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;display:flex;flex-direction:row;align-items:center;gap:1rem;">
+        <div style="flex:1;min-width:0;">
+          <img src="figures/Main_Experiment_ID_seq.png" alt="ID task sequences" style="width:100%;display:block;">
+          <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Training Configuration</p>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <img src="figures/Main_Experiment_OOD_seq.png" alt="OOD task sequences" style="width:100%;display:block;">
+          <p class="fig-cap sans" style="margin-top:0.35rem;text-align:center;">Held-out Configuration</p>
+        </div>
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.6rem auto 0;">
+        9 out of 10 evaluation sequences are unseen during training. The reset-free baseline not only handles sequential manipulation better but also generalizes to novel orderings.
+      </p>
+    </div>
+
+    <!-- Scalability -->
+    <div class="content-block">
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;color:#111;">Scalability to Complex Task Suites (3 Objects × 3 Receptacles)</h3>
+      <div class="body-text">
+        <p>
+          We validate scalability on a more complex scene with three objects (toy bear, shovel, ketchup bottle)
+          and three receptacles (plate, cloth, carpet), yielding nine pick-and-place tasks. The non-episodic
+          baseline (T=320) maintains competitive performance on interaction steps while demonstrating
+          significantly superior reset efficiency, confirming that CRONOS baselines scale effectively
+          to more complex scenarios.
+        </p>
+      </div>
+      <div style="max-width:780px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;display:flex;flex-direction:row;align-items:center;gap:1rem;">
+        <div style="flex:1;min-width:0;">
+          <img src="figures/3x3_ID.png" alt="3×3 scalability: success rate vs. interaction steps" style="width:100%;display:block;mix-blend-mode:multiply;">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <img src="figures/3x3_ID_reset.png" alt="3×3 scalability: success rate vs. number of scene resets" style="width:100%;display:block;mix-blend-mode:multiply;">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== BIBTEX ========== -->
+<div class="content-section white">
+  <div class="content-block">
+    <h2 class="section-heading">BibTeX</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+      <span class="sans" style="font-size:0.95rem;color:#555;">If you find this work useful, please cite:</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyBib()">Copy</button>
+    </div>
+    <pre id="bibbox">@article{wu2026cronos,
+  title     = {{CRONOS}: Benchmarking Multi-Task Robotic Manipulation
+               for Reset-Free Reinforcement Learning At Scale},
+  author    = {Wu, Po-Yi and Fang, Djengo Cyun-Jyun and
+               Cheng, Dian and Ke, Tsung-Wei},
+  journal   = {arXiv preprint},
+  year      = {2026}
+}</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== ACKNOWLEDGMENT ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Acknowledgment</h2>
+    <div class="body-text">
+      <p>
+        This research was supported by the National Science and Technology Council (NSTC), Taiwan.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <p>
+        Website template adapted from
+        <a href="https://nerfies.github.io" target="_blank">Nerfies</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<script>
+  const scrollBtn = document.getElementById('scrollToTop');
+  window.addEventListener('scroll', () => {
+    scrollBtn.classList.toggle('visible', window.scrollY > 300);
+  });
+  scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  function copyBib() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(document.getElementById('bibbox').innerText).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

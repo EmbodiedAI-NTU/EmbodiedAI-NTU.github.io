@@ -1,0 +1,185 @@
+\title{CRONOS: Benchmarking Multi-Task Robotic Manipulation for Reset-Free Reinforcement Learning At Scale}
+
+\author{
+Po-Yi Wu$^{*}$\qquad
+Djengo Cyun-Jyun Fang$^{*}$\qquad
+Dian Cheng\qquad
+Tsung-Wei Ke\\[6pt]
+National Taiwan University\\[4pt]
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\begin{document}
+\twocolumn[{
+    \renewcommand\twocolumn[1][]{#1}%
+    \maketitle
+    \begin{center}
+        \newcommand{\teaserwidth}{\textwidth}
+        \vspace{-0.15in}
+        \centerline{
+        \includegraphics[width=\teaserwidth, clip]{figures/teaser.pdf}
+        }
+        \vspace{-5ex}
+        \captionof{figure}{\textbf{Comparison between common episodic multi-task RL and our shared-scene reset-free multi-task RL (RF-MTRL).} \textbf{Top:} Common episodic multi-task RL isolates each task into separate scenes and conducts frequent scene resets to prevent agents from being trapped in low-reward states. \textbf{Bottom:} We propose CRONOS to study RF-MTRL. This simulation benchmark shares scenes across tasks, which reduces reset overhead and more closely reflects real-world deployment. Meanwhile, agents must determine not only the ordering of training tasks but also \emph{when} and \emph{how} to reset scenes given a fixed reset budget.}
+    \label{fig:teaser}
+    \vspace{-8pt}
+    \end{center}
+}]
+
+\begin{abstract}
+\vspace{-50pt}
+Reinforcement learning (RL) is promising for adapting robot policies to unstructured real-world environments. However, standard RL pipelines rely on episodic training with frequent scene resets, which is impractical for real-world deployment due to the need for substantial human intervention. We introduce \textbf{CRONOS}, a simulation benchmark for studying reset-free multi-task RL under long-horizon interactions and constrained reset budgets. To reflect realistic deployment, CRONOS leverages high-fidelity physics simulators, adopts shared-scene multi-task settings, targets the adaptation of state-of-the-art robot policies, and formalizes reset-free learning under a fixed reset budget. CRONOS highlights five research topics: (1) learning effectiveness under varying reset budgets, (2) algorithm design for automatic resets, (3) biases in pre-trained policies, (4) the impact of individual learning factors, and (5) robustness to distributional drifts. We show that naively fine-tuning pre-trained policies fails in reset-free settings; however, these challenges can be mitigated through intelligent reset allocation and by addressing biases in pre-trained models. Finally, we demonstrate that reset-free training enhances long-horizon manipulation and improves generalization to out-of-distribution object configurations and task sequences.
+\end{abstract}
+
+\section{Introduction}
+\renewcommand{\thefootnote}{}
+\footnotetext{* Equal contribution.}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+\setcounter{footnote}{0}
+
+The ability to learn and adapt within their environments is essential for deploying robots in unstructured and continually changing real-world environments. Recently, behavior cloning (BC) has demonstrated remarkable results of robots trained to perform complex daily tasks~\cite{black2024pi0,team2025gemini}. However, this learning framework alone is insufficient for robust real-world robot deployment. BC policies often fail under novel distributions--such as unseen scene layouts, object categories, or dynamics~\cite{barreiros2025careful}--while collecting demonstrations to exhaustively cover such failures is impractical. Reinforcement learning (RL) is a compelling alternative that enables policies to adapt through trial-and-error interaction with the environment. Recent studies show that RL fine-tuning can substantially improve generalization and robustness of BC policies in novel scenarios~\cite{intelligence2025pi06}.
+
+Despite this promise, RL has so far been demonstrated primarily in simulation~\cite{yu2020metaworld,tunyasuvunakool2020dmcontrol} or small-scale real-world studies~\cite{levine2016end,yahya2017collective,kalashnikov2018scalable,ankile2025residual}. Scaling RL to real-world deployment remains a major bottleneck due to several unrealistic assumptions in standard RL pipelines, such as reliance on episodic training, hand-crafted reward functions and human-specified task suites. This paper focuses specifically on the limitation of \emph{episodic training}, which assumes frequent scene resets to prevent agents from being trapped in low-reward states during training. While scene reset is free in simulation, it incurs substantial human intervention in real-world settings, thereby preventing RL from being deployed at scale in real-world robotic systems.
+
+To reduce these laborious needs, a wide range of reset-free RL algorithms have been proposed, including manually scripting the reset robot policy~\cite{levine2016end,sharma2020emergent}, instrumenting the reset mechanism~\cite{zeng2020tossingbot,kalashnikov2018scalable,kalashnikov2021mtopt}, or tackling scene resets through a multi-task learning framework~\cite{gupta2021resetfree} that treats scene resets as additional tasks and trains policies to reset~\cite{eysenbach2017leavenottrace,zhu2020ingredients}. With these approaches, we aim to answer if they are capable of adapting state-of-the-art robot policies, such as vision-language-action models (VLAs;~\cite{kim2024openvla,li2024cogact,qu2025spatialvla}), under non-episodic training settings.
+
+Since real-world experiments are often time-consuming and costly, we propose to leverage simulation benchmarks to facilitate systematic study on reset-free RL. This paper introduces \textbf{C}ontinual \textbf{R}obotic \textbf{O}perations in \textbf{N}On-episodic \textbf{S}ettings (\textbf{CRONOS})--a simulation benchmark carefully designed to reflect realistic deployment while addressing key limitations of existing benchmarks.
+
+First, CRONOS enhances sim-to-real alignment by building upon high-fidelity simulators--SimplerEnv~\cite{li2024simpler} and its extension~\cite{liu2025rlvla}. Second, CRONOS adopts a realistic multi-task learning setup by sharing scenes across tasks, in contrast to prior benchmarks that isolate each task into a separate scene~\cite{yang2024robot}. Third, CRONOS targets recent advances in robot learning by evaluating reset-free RL fine-tuning of state-of-the-art pre-trained policies, such as OpenVLA~\cite{kim2024openvla}, rather than policies trained from scratch~\cite{gupta2021resetfree}. Finally, following EARL~\cite{sharma2021earl}, CRONOS formalizes reset-free training as learning under a fixed budget of scene resets, enabling systematic analysis across varying levels of human intervention.
+
+\section{Preliminaries}
+
+\paragraph{Multi-task RL.}
+Multi-task RL problems consider learning optimal policies $\pi^*$ for a set of tasks sampled from a task distribution $p_z$. A task $z \sim p_z(\cdot)$ defines a Markov decision process (MDP) $\mathcal{M}_z = (\mathcal{S}, \mathcal{A}, P, R_z, \rho, \gamma)$, where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $P$ denotes the transition dynamics, $R_z$ is the reward function of the task, $\rho$ is the initial state distribution, and $\gamma$ denotes the discount factor. The RL objective is to learn a policy maximizing the expected return:
+\begin{equation}
+    J(\pi) = \mathbb{E}_{z \sim p_z(\cdot)}\mathbb{E}_{s_0 \sim \rho, a_h \sim \pi(\cdot|s_h;z)}
+    \left[\sum_{h=0}^{H} \gamma^h R_z(s_h, a_h)\right]
+\end{equation}
+
+\paragraph{Reset-free Multi-Task RL (RF-MTRL).}
+Following~\cite{sharma2021earl}, we extend this formulation to reset-free deployment settings. Training trajectories are rolled out continually across tasks with no or only occasional scene resets. To model occasional scene resets, we re-define the transition dynamics as $\hat{P}(\cdot|s_h, a_h) = (1 - \varepsilon)P(\cdot|s_h, a_h) + \varepsilon\rho(\cdot)$, where the next state follows the environment dynamics $P$ with probability $1-\varepsilon$, and is instead sampled from the initial-state distribution $\rho$ with probability $\varepsilon$.
+
+\paragraph{Evaluation Metrics.}
+We evaluate algorithms along two dimensions. \emph{Interaction efficiency} measures how quickly the algorithm approaches optimal performance as a function of environment interactions:
+\begin{equation}
+    \mathbb{D}(\mathbb{A}) = \sum_{t=0}^{T} \left(J(\pi^*) - J(\pi_t)\right)
+\end{equation}
+\emph{Reset efficiency} captures how effectively an algorithm learns under limited resets:
+\begin{equation}
+    \mathbb{C}(\mathbb{A}) = \sum_{k=0}^{K} \left(J(\pi^*) - J(\pi_k)\right)
+\end{equation}
+where $K$ is the maximum number of scene resets and $\pi_k$ denotes the policy estimated immediately after the $k$-th reset.
+
+\section{Challenges in Reset-free Multi-task RL}
+
+We outline five major challenges in RF-MTRL that motivate the design of CRONOS:
+
+\textbf{(C1) Learning effectiveness under varying levels of human intervention.} Scene resets are laborious and incur a major bottleneck for scaling real-world RL deployment.
+
+\textbf{(C2) Algorithm design for automatic reset.} An effective reset-free RL algorithm requires deciding \emph{when} (detecting unrecoverable states) and \emph{how} (executing reset behaviors) to reset.
+
+\textbf{(C3) Biases in pre-trained BC policy.} The conditions under which RL can effectively adapt BC policies—especially in reset-free, multi-task settings—remain an open question.
+
+\textbf{(C4) The impact of individual learning factors.} Task ordering and curriculum learning substantially affect learning efficiency in reset-free RL settings, yet their roles remain understudied.
+
+\textbf{(C5) Robustness to out-of-distribution conditions.} CRONOS measures robustness along the dimension of task sequences and object positions.
+
+\section{CRONOS}
+
+CRONOS is built upon SimplerEnv~\cite{li2024simpler} and its extension~\cite{liu2025rlvla}, which provides high-fidelity physics simulation with demonstrated sim-to-real transfer. In contrast to prior benchmarks, CRONOS places multiple objects in a single scene and shares that scene across tasks, reflecting real-world deployment more closely.
+
+\paragraph{Scene Layout.}
+CRONOS uses an RGB camera with 640$\times$480 resolution and deploys an 8-DoF WidowX-250S robotic arm. The robot is position-controlled via 6-DoF end-effector pose commands and gripper signals.
+
+\paragraph{Task Suites.}
+CRONOS focuses on pick-and-place tasks, each defined by an object, a target receptacle, and a language instruction. The benchmark configures a scene with two objects (shovel and ketchup bottle) and two receptacles (plate and cloth), constituting four distinct tasks: ``put the [object] on the [receptacle]."
+
+\paragraph{Training.}
+Following~\cite{liu2025rlvla}, we employ sparse rewards: 0.1 for grasping and 1.0 for task completion. Each object or receptacle is placed in one of 64 random positions. We use Proximal Policy Optimization (PPO;~\cite{schulman2017ppo}) as the base RL framework with task transitions every 80 interaction steps.
+
+\paragraph{Evaluation.}
+We evaluate performance along two dimensions: success rate relative to interaction steps (Eq.~3) and relative to the number of scene resets (Eq.~4). We report both in-domain and out-of-distribution generalization, each consisting of 64 object-receptacle configurations. We additionally incorporate a sequential evaluation setup measuring a policy's ability to transition between and accomplish tasks consecutively, inspired by CALVIN~\cite{mees2022calvin}.
+
+\section{Baseline Methods}
+
+We propose several baseline methods to tackle challenges C1--C4.
+
+\paragraph{Periodic and Heuristic Reset.}
+\emph{Periodic reset} resets the scene every $T \in \{80, 320, 1280, 2560\}$ interaction steps, where $T=80$ corresponds to standard episodic training. \emph{Heuristic reset} triggers a reset whenever the scene enters an unrecoverable state, such as when objects are displaced outside the robot's workspace.
+
+\paragraph{Learning-based Reset.}
+We define ``put the [object] on the table" as the reset task and fine-tune the policy to perform both pick-and-place and reset tasks, alternating rollout collection between the two.
+
+\paragraph{VLAs and Episodic End-effector Reset.}
+We focus on fine-tuning OpenVLA~\cite{kim2024openvla} under reset-free settings. Surprisingly, reset-free fine-tuning of OpenVLA is initially ineffective—the policy often sweeps objects off the table during task transitions. We hypothesize this stems from distributional drift in the robot's end-effector configuration between pre-training and fine-tuning. We propose to \emph{episodically reset the end-effector but not the scene}, which significantly mitigates this issue.
+
+\paragraph{Random and Heuristic Task Ordering.}
+We compare random ordering against a heuristic approach based on a cyclic task graph~\cite{gupta2021resetfree} that avoids consecutively picking the same object.
+
+\paragraph{Curriculum Learning.}
+We perform more frequent scene resets during the early stages of training ($T=320$ for the first 0.65M steps) and reduce the frequency as training progresses ($T=1280$ afterwards).
+
+\section{Experiments}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{ccccc|c}
+\toprule
+$T$ & e.e. reset & CL & LSR & HSR & SR @ 1.3M \\
+\midrule
+80  & -- & -- & -- & -- & $0.897 \pm 0.027$ \\
+1280 & -- & -- & -- & -- & $0.023 \pm 0.030$ \\
+1280 & \checkmark & -- & -- & -- & $0.326 \pm 0.179$ \\
+1280 & \checkmark & \checkmark & -- & -- & $0.578 \pm 0.054$ \\
+1280 & \checkmark & \checkmark & \checkmark & -- & $0.580 \pm 0.036$ \\
+1280 & \checkmark & \checkmark & -- & \checkmark & $0.649 \pm 0.090$ \\
+1280 & \checkmark & \checkmark & \checkmark & \checkmark & $0.631 \pm 0.065$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Performance of RF-MTRL approaches.} EER: episodic end-effector reset, CL: curriculum learning, LSR: learned scene reset, HSR: heuristic scene reset.}
+\label{tab:main}
+\end{table}
+
+\subsection{Biases in Pre-trained BC Policies (Q1)}
+Directly fine-tuning OpenVLA under reset-free settings ($T=1280$) yields only a 2.3\% average success rate, compared to 89.7\% achieved via episodic training ($T=80$). Episodic end-effector reset significantly improves performance, increasing the absolute success rate by 30.3\%.
+
+\subsection{Efficacy of RF-MTRL Approaches (Q2)}
+The learned scene reset approach yields only a trivial performance gain of 0.2\% in average success rate. In contrast, heuristic scene reset provides an absolute performance gain of 7.1\%, at the cost of twice the reset budget (6,000 vs.\ 2,000 resets).
+
+\subsection{Impact of Curriculum Learning (Q3)}
+Curriculum learning significantly enhances interaction efficiency, bringing an absolute gain of 25.2\% in the average success rate. This strategy achieves a superior trade-off between interaction and reset efficiency: it requires only 60\% more resets to match the success rate of the non-curriculum baseline.
+
+\subsection{Impact of Task Ordering (Q3)}
+Heuristic task ordering achieves higher learning efficiency than random ordering under reset-free multi-task settings.
+
+\subsection{Learning Efficiency Under Varying Reset Budgets (Q4)}
+While the standard episodic baseline ($T=80$) achieves the highest success rate for a fixed number of interaction steps, it exhibits poor reset efficiency, resulting in a 38\% performance gap under an 8,000-reset budget. Non-episodic baselines achieve superior reset efficiency.
+
+\subsection{Robustness to Distributional Shifts (Q5)}
+When trained on a single object-receptacle configuration, the periodic reset method yields a substantial performance gain on held-out configurations compared to the episodic baseline. For testing task sequences, the periodic reset baseline outperforms the episodic baseline, as our multi-object scenes naturally support sequential task execution.
+
+\section{Related Work}
+
+\paragraph{Fine-tuning VLA with RL.}
+VLA models~\cite{intelligence2025pi05,kim2024openvla,oneill2024openx,ankile2025residual,team2024octo} learn generalist robot policies but inherit the key limitation of BC: poor OOD robustness. Recent work shows RL fine-tuning can substantially improve VLA generalization~\cite{liu2025rlvla,zhang2025reinbot,huang2025corft,li2025vlarft,lu2025vlarl}. However, all existing methods fine-tune VLA models under episodic training assumption, while our benchmark explores VLA fine-tuning under a non-episodic setting.
+
+\paragraph{Reset-free RL.}
+Real-world RL is fundamentally constrained by the cost of human intervention for environment resets~\cite{liu2023libero,sharma2021earl}. Existing approaches address this via model-based methods~\cite{yang2025resetfree,treven2024neorl}, joint learning of task and reset policies~\cite{lee2024selfimproving,patil2024intelligent,sharma2023selfimproving,kim2023demoauto,walke2022dontstart,sharma2022statedist,eysenbach2017leavenottrace,xie2022proactive}, or multi-task formulations~\cite{gupta2022demo,xu2022dexterous,gupta2021resetfree,ha2020walk}. In contrast, our benchmark explicitly quantifies reset efficiency.
+
+\section{Conclusion}
+
+The contributions of this paper are: (1) we introduce CRONOS, a simulation benchmark designed to enable systematic studies of RF-MTRL; (2) we formalize two distinct evaluation metrics to quantify interaction efficiency and reset efficiency; (3) we focus on the fine-tuning of state-of-the-art pre-trained BC policies; and (4) we present an extensive analysis revealing the necessity of mitigating policy biases, utilizing intelligent reset allocation, and implementing strategic task ordering in RF-MTRL.
+
+\clearpage
+{
+    \small
+    \section*{Acknowledgment}
+        This research was supported by the National Science and Technology Council (NSTC), Taiwan.
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{bibs/main}
+}
+
+\end{document}
