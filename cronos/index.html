@@ -330,7 +330,7 @@
     <div class="columns" style="margin-top:1.5rem;gap:1rem;align-items:stretch;">
       <div class="column">
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.2rem 1.5rem;height:100%;box-sizing:border-box;">
-          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;margin-bottom:0.5rem;white-space:nowrap;">Standard Episodic RL</p>
+          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;margin-bottom:0.5rem;white-space:nowrap;">Standard Episodic Muti-task RL</p>
           <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
             <li>Each task isolated in its own scene</li>
             <li>Frequent human resets required</li>
@@ -411,7 +411,7 @@
       </div>
       <div class="body-text" style="margin-top:1rem;">
         <p style="font-weight:600;margin-bottom:0.2rem;">Interaction Efficiency</p>
-        <p>\(\pi_t\) is the policy at interaction step \(t\); \(\pi^*\) is the optimal policy; \(J(\cdot)\) denotes the task success rate.</p>
+        <p>Here \(\pi_t\) denotes the policy estimated by algorithm \(\mathbb{A}\) at interaction step \(t\) over a horizon of \(T\) steps, \(\pi^* = \arg\max_\pi J(\pi)\) denotes the optimal policy, and \(J(\pi)\) measures the expected return across all tasks.</p>
       </div>
       <div class="math-block">
         \[
@@ -420,7 +420,7 @@
       </div>
       <div class="body-text" style="margin-top:1rem;">
         <p style="font-weight:600;margin-bottom:0.2rem;">Reset Efficiency</p>
-        <p>\(\pi_k\) is the policy after the \(k\)-th scene reset; \(\pi^*\) is the optimal policy; \(J(\cdot)\) denotes the task success rate.</p>
+        <p>Here \(\pi_k\) denotes the policy estimated by algorithm \(\mathbb{A}\) immediately after the \(k\)-th scene reset, with \(K\) as the maximum number of resets allowed. \(\pi^*\) and \(J(\pi)\) follow the same definitions as above.</p>
       </div>
       <div class="math-block">
         \[
