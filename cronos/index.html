@@ -325,33 +325,25 @@
         significant human effort — repositioning objects, resetting the robot, re-staging the scene.
         This bottleneck prevents RL from being deployed at scale in real-world robotic systems.
       </p>
-      <p>
-        Existing reset-free RL benchmarks suffer from several limitations: outdated simulators with
-        large sim-to-real gaps, per-task isolated scenes that don't reflect real deployment, and
-        evaluation on policies trained from scratch rather than modern pre-trained VLAs.
-        <strong>CRONOS addresses all of these shortcomings.</strong>
-      </p>
     </div>
 
-    <div class="columns is-vcentered" style="margin-top:1.5rem;gap:1rem;">
+    <div class="columns" style="margin-top:1.5rem;gap:1rem;align-items:stretch;">
       <div class="column">
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.2rem 1.5rem;">
-          <p class="sans" style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;margin-bottom:0.5rem;">Standard Episodic RL</p>
-          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.2rem 1.5rem;height:100%;box-sizing:border-box;">
+          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;margin-bottom:0.5rem;white-space:nowrap;">Standard Episodic RL</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
             <li>Each task isolated in its own scene</li>
             <li>Frequent human resets required</li>
             <li>Doesn't scale to real-world deployment</li>
-            <li>Scene diversity demands intensive supervision</li>
           </ul>
         </div>
       </div>
       <div class="column">
-        <div style="background:#fff;border:2px solid #2563eb;border-radius:8px;padding:1.2rem 1.5rem;">
-          <p class="sans" style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2563eb;margin-bottom:0.5rem;">CRONOS: Reset-Free Multi-Task RL</p>
-          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;">
+        <div style="background:#fff;border:2px solid #2563eb;border-radius:8px;padding:1.2rem 1.5rem;height:100%;box-sizing:border-box;">
+          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#2563eb;margin-bottom:0.5rem;white-space:nowrap;">CRONOS: Reset-Free Multi-Task RL</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
             <li>Shared scene across all tasks</li>
             <li>Fixed reset budget, minimal intervention</li>
-            <li>Fine-tuning of state-of-the-art VLAs</li>
             <li>High-fidelity simulator with sim-to-real transfer</li>
           </ul>
         </div>
@@ -374,9 +366,8 @@
         </p>
         <p>
           The key design choice: <strong>multiple objects share a single scene across all tasks</strong>.
-          In the base configuration, CRONOS places a ketchup bottle and a shovel in a scene with a plate
-          and a cloth, yielding four pick-and-place tasks: <em>"put the [object] on the [receptacle]."</em>
-          Objects and receptacles are randomized across 64 positions for training and evaluation.
+          In the base configuration, CRONOS places two objects in a scene with two receptacles, yielding four pick-and-place tasks: <em>"put the [object] on the [receptacle]."</em>
+          Objects and receptacles are randomized across different positions for training and evaluation.
         </p>
       </div>
     </div>
@@ -418,19 +409,25 @@
           CRONOS evaluates performance along two orthogonal axes:
         </p>
       </div>
+      <div class="body-text" style="margin-top:1rem;">
+        <p style="font-weight:600;margin-bottom:0.2rem;">Interaction Efficiency</p>
+        <p>\(\pi_t\) is the policy at interaction step \(t\); \(\pi^*\) is the optimal policy; \(J(\cdot)\) denotes the task success rate.</p>
+      </div>
       <div class="math-block">
         \[
           \mathbb{D}(\mathbb{A}) = \sum_{t=0}^{T} \bigl(J(\pi^*) - J(\pi_t)\bigr)
-          \qquad \text{(Interaction Efficiency)}
         \]
+      </div>
+      <div class="body-text" style="margin-top:1rem;">
+        <p style="font-weight:600;margin-bottom:0.2rem;">Reset Efficiency</p>
+        <p>\(\pi_k\) is the policy after the \(k\)-th scene reset; \(\pi^*\) is the optimal policy; \(J(\cdot)\) denotes the task success rate.</p>
       </div>
       <div class="math-block">
         \[
           \mathbb{C}(\mathbb{A}) = \sum_{k=0}^{K} \bigl(J(\pi^*) - J(\pi_k)\bigr)
-          \qquad \text{(Reset Efficiency)}
         \]
       </div>
-      <div class="body-text">
+      <div class="body-text" style="margin-top:1rem;">
         <p>
           Reset efficiency is critical for real-world deployment: scene resets are often significantly
           more costly than individual environment interactions, and an algorithm must make the most of
@@ -633,12 +630,16 @@
       <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;color:#111;">Scalability to Complex Task Suites (3 Objects × 3 Receptacles)</h3>
       <div class="body-text">
         <p>
-          We validate scalability on a more complex scene with three objects (toy bear, shovel, ketchup bottle)
-          and three receptacles (plate, cloth, carpet), yielding nine pick-and-place tasks. The non-episodic
+          We validate scalability on a more complex scene with three objects and three receptacles, yielding nine pick-and-place tasks. The non-episodic
           baseline (T=320) maintains competitive performance on interaction steps while demonstrating
           significantly superior reset efficiency, confirming that CRONOS baselines scale effectively
           to more complex scenarios.
         </p>
+      </div>
+      <div style="max-width:480px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;">
+        <video autoplay muted loop playsinline controls preload="metadata" style="width:100%;border-radius:6px;border:1px solid #e2e8f0;">
+          <source src="cronos_viz/3x3.mp4" type="video/mp4">
+        </video>
       </div>
       <div style="max-width:780px;margin-left:auto;margin-right:auto;padding:0.5rem 2rem;display:flex;flex-direction:row;align-items:center;gap:1rem;">
         <div style="flex:1;min-width:0;">
