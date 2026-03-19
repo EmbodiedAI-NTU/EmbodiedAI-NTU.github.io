@@ -267,7 +267,7 @@
           </a>
         </span>
         <span class="link-block">
-          <a href="#" class="external-link button is-dark no-link">
+          <a href="https://github.com/EmbodiedAI-NTU/CRONOS" target="_blank" class="external-link button is-dark">
             <span>Code (coming soon)</span>
           </a>
         </span>
@@ -326,7 +326,7 @@
 <!-- ========== MOTIVATION ========== -->
 <div class="content-section shaded">
   <div class="content-block">
-    <h2 class="section-heading">The Problem: Episodic Training at Scale</h2>
+    <h2 class="section-heading">The Problem: Episodic Training Doesn't Scale</h2>
     <div class="body-text">
       <p>
         Standard RL pipelines assume <em>episodic training</em>: after each episode, the environment is
@@ -369,7 +369,7 @@
     <div class="content-block">
       <div class="body-text">
         <p>
-          CRONOS is built upon SimplerEnv and its extension, which provides high-fidelity physics simulation
+          CRONOS is built upon SimplerEnv and its<a href="https://rlvla.github.io" target="_blank"> extension</a>, which provides high-fidelity physics simulation
           demonstrated to transfer to real-world settings with limited performance degradation. The benchmark
           deploys an 8-DoF WidowX-250S robotic arm controlled via 6-DoF end-effector pose commands.
         </p>
@@ -505,6 +505,9 @@
         <span><strong>RF-MTRL improves OOD generalization.</strong> When trained on limited configurations, non-episodic training yields substantially stronger generalization to held-out object-receptacle configurations and unseen task sequences compared to episodic baselines.</span>
       </li>
     </ul>
+    <p class="sans" style="font-size:0.85rem;color:#888;margin-top:1rem;">
+      <sup>†</sup> <em>T</em> denotes the interaction steps between two consecutive scene resets.
+    </p>
   </div>
 </div>
 
@@ -520,7 +523,8 @@
       <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;color:#111;">RF-MTRL Approaches on CRONOS</h3>
       <p class="sans" style="font-size:0.95rem;color:#555;margin-bottom:1rem;">
         Success rate @ 1.3M interaction steps · 5 seeds · training object-receptacle configurations<br>
-        <span style="color:#666;">EER = Episodic End-effector Reset &nbsp;·&nbsp; CL = Curriculum Learning &nbsp;·&nbsp; LSR = Learned Scene Reset &nbsp;·&nbsp; HSR = Heuristic Scene Reset</span>
+        <span style="color:#666;">EER = Episodic End-effector Reset &nbsp;·&nbsp; CL = Curriculum Learning &nbsp;·&nbsp; LSR = Learned Scene Reset &nbsp;·&nbsp; HSR = Heuristic Scene Reset</span><br>
+        <span style="color:#888;font-size:0.85rem;"><sup>†</sup> <em>T</em> denotes the interaction steps between two consecutive scene resets.</span>
       </p>
       <div class="table-wrap">
         <table class="results-table">
