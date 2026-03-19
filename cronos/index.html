@@ -80,6 +80,10 @@
       background: none !important; color: #1d4ed8 !important; transform: none !important;
     }
     .publication-links .external-link.button .icon { display: none !important; }
+    .publication-links .external-link.button.no-link {
+      color: #111 !important; text-decoration: none !important;
+      cursor: default !important; pointer-events: none !important;
+    }
 
     /* ── Layout ── */
     .content-section { padding: 3rem 1.5rem; }
@@ -253,12 +257,17 @@
       <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;·&nbsp; † Corresponding author</p>
       <div class="publication-links" style="margin-top:1.25rem;">
         <span class="link-block">
-          <a href="#" class="external-link button is-dark" onclick="return false;">
+          <a href="#" class="external-link button is-dark no-link">
             <span>Arxiv</span>
           </a>
         </span>
         <span class="link-block">
-          <a href="#" class="external-link button is-dark" onclick="return false;">
+          <a href="pdf/CRONOS.pdf" target="_blank" class="external-link button is-dark">
+            <span>Paper</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark no-link">
             <span>Code (coming soon)</span>
           </a>
         </span>
@@ -344,7 +353,7 @@
           <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
             <li>Shared scene across all tasks</li>
             <li>Fixed reset budget, minimal intervention</li>
-            <li>High-fidelity simulator with sim-to-real transfer</li>
+            <li>Robustness to real world training</li>
           </ul>
         </div>
       </div>
@@ -429,9 +438,7 @@
       </div>
       <div class="body-text" style="margin-top:1rem;">
         <p>
-          Reset efficiency is critical for real-world deployment: scene resets are often significantly
-          more costly than individual environment interactions, and an algorithm must make the most of
-          each reset it consumes.
+          Reset efficiency is critical for real-world deployment, as scene resets are often significantly more costly than individual environment interactions, requiring algorithms to make the most of each reset.
         </p>
       </div>
     </div>
