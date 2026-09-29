@@ -1,0 +1,20 @@
+{
+  "source": "/mnt/scratch/tactile/demo_hd/gear/ep_1200/ep1_env044.npy",
+  "success": 1,
+  "frames": 299,
+  "tactile_shape": [
+    299,
+    40,
+    25,
+    3
+  ],
+  "task": "grasp peg and insert to another hole",
+  "pad_layout": "rows 0-19 left pad (_l), 20-39 right pad (_r); each rotated 90 deg clockwise",
+  "arrow_scale": 0.002831510059535504,
+  "dot_only_below": 0.001061816272325814,
+  "cell_px": 24,
+  "arrowhead": true,
+  "shared_with": [
+    "/mnt/scratch/tactile/demo_hd/gear/ep_1200/ep0_env018.npy"
+  ]
+}

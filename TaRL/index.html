@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaRL: Learning General and Physical Rewards from Tactile Demonstrations</title>
+  <meta name="description" content="TaRL is the first framework that learns reinforcement-learning reward functions from tactile demonstrations. It regresses task progress from sequences of tactile deformation maps, providing dense rewards for contact-rich manipulation that visual rewards miss.">
+  <meta name="keywords" content="tactile reward learning, reward learning from demonstrations, contact-rich manipulation, reinforcement learning, tactile sensing, robotics">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TaRL: Learning General and Physical Rewards from Tactile Demonstrations">
+  <meta property="og:description" content="The first approach to learning RL rewards from tactile demonstrations. Raises cube-pickup success from 37% to 97% in the real world.">
+  <meta property="og:image" content="./static/images/Teaser/Teaser.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230fa3a0'/%3E%3Ctext x='50' y='66' font-size='48' font-family='Georgia,serif' font-weight='700' text-anchor='middle' fill='white'%3ET%3C/text%3E%3C/svg%3E">
+
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, svg: { fontCache: 'global' } };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+
+<!-- ======================================================================
+     HERO
+     ====================================================================== -->
+<header class="hero">
+  <div class="container">
+    <h1><span class="brand">TaRL</span>: Learning General and Physical Rewards from Tactile Demonstrations</h1>
+    <p class="subtitle">The first approach of a learned tactile reward model</p>
+
+    <!-- TODO: add author homepage links, e.g. <a href="https://...">Po-Yi Wu</a> -->
+    <div class="authors">
+      <span class="author">Po-Yi Wu<sup>1</sup></span>,
+      <span class="author">Dao-Jan Chang<sup>1</sup></span>,
+      <span class="author">Shang-Ya Hsiao<sup>2</sup></span>,
+      <span class="author">Hong-Ming Chen<sup>2</sup></span>,
+      <span class="author">Yu-Cheng Su<sup>2</sup></span>,
+      <span class="author">Tsung-Wei Ke<sup>1</sup></span>
+    </div>
+    <div class="affils">
+      <span><sup>1</sup>National Taiwan University</span>
+      <span><sup>2</sup>Delta Electronics</span>
+    </div>
+
+    <div class="links">
+      <!-- TODO: replace with the arXiv link when available -->
+      <a class="btn soon" title="Coming soon">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4zm0 7h16v2H4zm0 7h10v2H4z"/></svg>
+        <span>arXiv (soon)</span>
+      </a>
+      <a class="btn" href="#rollouts">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span>Videos</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ======================================================================
+     TEASER VIDEO
+     ====================================================================== -->
+<section class="teaser" id="video">
+  <div class="container">
+    <div class="video-frame hero-video">
+      <video autoplay muted loop playsinline controls>
+        <source src="./static/video/visual_comparison/hero.mp4" type="video/mp4">
+      </video>
+    </div>
+    <p class="caption"><b>Tactile rewards generalize where visual rewards collapse.</b> Predicted <span class="c-tactile">tactile</span> and <span class="c-visual">visual</span> rewards along successful nut-threading rollouts at a seen object position (left) and an unseen one (right). Both reward models are trained on demonstrations from a single position; TaRL generalize better than visual reward model.</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="num"><span class="from">70%</span><span class="arrow">→</span>81%</div>
+        <div class="lbl">Average success in simulation</div>
+        <div class="sub">w/o TaRL → w/ TaRL</div>
+      </div>
+      <div class="stat">
+        <div class="num"><span class="from">20%</span><span class="arrow">→</span>59%</div>
+        <div class="lbl">Average success in Real World</div>
+        <div class="sub">w/o TaRL → w/ TaRL</div>
+      </div>
+      <div class="stat">
+        <div class="num"><span class="c-tactile">88%</span><span class="arrow">vs</span><span class="c-visual">20%</span></div>
+        <div class="lbl">Generalization Gap</div>
+        <div class="sub">reward kept at unseen positions</div>
+      </div>
+      <div class="stat">
+        <div class="num">2.1×</div>
+        <div class="lbl">Faster policy learning</div>
+        <div class="sub">iterations to reach baseline success</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     ABSTRACT
+     ====================================================================== -->
+<section id="abstract">
+  <div class="container narrow">
+    <h2>Abstract</h2>
+    <p class="justify">
+      Contact-rich manipulation requires robots to sequence precise contacts, maintain stable grasps, and apply directed forces.
+      Reinforcement learning (RL) can acquire such behaviors automatically, but its performance hinges on reward design:
+      sparse rewards reduce the learning efficiency, while dense rewards are hard to specify. Visual reward learning addresses
+      this by inferring rewards from action-free demonstrations. Because it conditions only on visual observations, it fails to
+      capture rewards beyond visual goals. We propose <strong>Tactile Reward Learning (TaRL)</strong>, a framework that learns
+      rewards from tactile demonstrations. TaRL takes a sequence of tactile deformation maps as input, and regresses
+      task-completion progress from both successful and failed demonstrations. Because TaRL captures local robot-object
+      interaction, it provides informative feedback to learn firm grasps and correctly directed forces; meanwhile, it is
+      robust to changes in scene layout such as object position. We evaluate TaRL on four manipulation tasks in simulation
+      and two in the real world. Used as a shaping reward, it substantially improves both sample efficiency and final success
+      rate, raising success on nut threading from <strong>34% to 56%</strong> in simulation and on cube pickup from
+      <strong>37% to 97%</strong> in the real world. Combining tactile with visual rewards improves performance further.
+      TaRL also generalizes across object instances: trained on box placement and directly deployed to can placement,
+      it significantly improves policy learning on the new task.
+    </p>
+  </div>
+  <div class="container" style="margin-top: 36px;">
+    <figure>
+      <img src="./static/images/Teaser/Teaser.jpg" alt="TaRL teaser: tactile observations are invariant to object position, capture local contact phases, and boost real-world RL.">
+      <figcaption>
+        <b>Why touch?</b> <b>Left:</b> tactile observations are invariant to varying object positions.
+        <b>Middle:</b> tactile rewards capture local robot-object interaction that cannot be observed visually, so TaRL produces informative
+        feedback at different contact phases (reach, grasp &amp; move, insertion). <b>Right:</b> TaRL enhances RL efficiency on contact-rich manipulation in the real world.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ======================================================================
+     METHOD
+     ====================================================================== -->
+<section id="method">
+  <div class="container">
+    <span class="eyebrow">Method</span>
+    <h2>How TaRL works</h2>
+    <p class="lede">
+      TaRL models reward as <em>task-completion progress</em>, a parameterization that matches how tactile signals evolve through
+      successful manipulation: from initial contact, to stable grasp, to directed force application.
+    </p>
+
+    <figure>
+      <img src="./static/images/method/Demonstration-5.png" alt="Overview of TaRL: demonstrations, the tactile reward model, and downstream RL.">
+      <figcaption>
+        <b>Overview of TaRL.</b> <b>(A)</b> TaRL is trained with successful, rewound and failed tactile demonstrations.
+        <b>(B)</b> TaRL conditions on tactile deformation maps and outputs task-progress rewards.
+        <b>(C)</b> TaRL is applied to downstream RL, offering dense rewards.
+      </figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <span class="k">A</span>
+        <h4>Tactile demonstrations</h4>
+        <p>Both successful and failed demonstrations are collected at a <strong>single object position</strong>: from intermediate RL checkpoints in simulation, or by teleoperation in the real world. Each rollout stores the binary outcome and the full sequence of 3D deformation maps from the two fingertip sensors.</p>
+      </div>
+      <div class="step">
+        <span class="k">B</span>
+        <h4>Tactile reward model</h4>
+        <p>A CNN encodes the tactile deformation maps observed so far, and a <strong>causal transformer</strong> regresses <strong>task progress</strong> from the sequence. The prediction is used directly as the reward.</p>
+      </div>
+      <div class="step">
+        <span class="k">C</span>
+        <h4>Downstream RL</h4>
+        <p>After offline training, TaRL is plugged into RL <strong>without fine-tuning</strong>. At every step it predicts a progress reward that is added to the environment's basic task reward, and optionally to a visual reward. Policies are trained with PPO online in simulation and with IQL offline in the real world.</p>
+      </div>
+    </div>
+
+    </div>
+
+    <h3 class="center" style="margin-top: 2em;">Training objective</h3>
+    <p class="narrow justify">
+      Following <a href="https://rewind-reward.github.io" target="_blank" rel="noopener">ReWiND</a>, three sets of training examples are constructed from the demonstrations:
+      <strong>(1)</strong> original tactile videos from successful demonstrations, regressed to progress \(t/T\);
+      <strong>(2)</strong> <em>rewound</em> tactile videos, formed by concatenating a forward prefix with a reversed suffix at a random split point \(i\), regressed to \((i-t)/T\);
+      and <strong>(3)</strong> tactile videos from failed demonstrations, regressed to 0. Rewinding lets the model produce decreasing rewards when the policy undoes progress, even though only successful and failed trajectories were recorded.
+    </p>
+    <div class="formula narrow">
+      \[ \mathcal{L}(\theta) = \underbrace{\sum_{t=1}^{T} \tilde{R}_\theta(o^{\text{tac}}_{1:t})^2}_{\text{failed}} \;+\;
+         \underbrace{\sum_{t=1}^{T} \Big(\tilde{R}_\theta(o^{\text{tac}}_{1:t}) - \tfrac{t}{T}\Big)^2}_{\text{successful}} \;+\;
+         \underbrace{\mathbb{E}_{i,\,t}\Big[\Big(\tilde{R}_\theta\big([o^{\text{tac}}_{1:i};\, o^{\text{tac}}_{i-1:i-t}]\big) - \tfrac{i-t}{T}\Big)^2\Big]}_{\text{successful but rewound}} \]
+    </div>
+
+    <h3 class="center" style="margin-top: 2em;">Downstream RL</h3>
+    <p class="narrow justify">
+      After offline training, TaRL is plugged into RL without fine-tuning. Its progress prediction is added to the environment's basic task reward,
+      and optionally to a visual reward, as a dense shaping term:
+    </p>
+    <div class="formula narrow">
+      \[ R_{\text{total}}(s_t, a_t, s_{t+1}) \;=\; R(s_t, a_t, s_{t+1}) \;+\; \alpha\, \tilde{R}_\theta\!\left(o^{\text{tac}}_{1:t}\right) \;+\; \beta\, \hat{R}_\phi\!\left(o_{1:t}\right) \]
+      <div class="legend">
+        <span class="tag tactile">tactile reward</span> \(\tilde{R}_\theta\) from TaRL &nbsp;·&nbsp;
+        <span class="tag visual">visual reward</span> \(\hat{R}_\phi\) from <a href="https://rewind-reward.github.io" target="_blank" rel="noopener">ReWiND</a> (Zhang et al., CoRL 2025)
+      </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     TASKS
+     ====================================================================== -->
+<section id="tasks">
+  <div class="container">
+    <span class="eyebrow">Benchmark</span>
+    <h2>Task suites</h2>
+    <p class="lede">
+      Four contact-rich tasks in simulation (Franka Panda with TacSL tactile simulation) and two real-world tasks
+      (LeRobot SO-101 with PaXini PX-6AX-GEN1 tactile sensors). Unlike the original benchmarks, every episode starts with the object
+      on the table, so policies must <strong>reach, grasp, and then insert, thread, or place</strong>.
+    </p>
+
+    <div class="tasks-grid">
+      <h4 class="gh gh-sim">Simulation</h4>
+      <div class="task"><img src="./static/images/Task_Suite/box_placement.jpg" alt="Box placement"><div class="name">Box placement</div></div>
+      <div class="task"><img src="./static/images/Task_Suite/peg_insertion.jpg" alt="Peg insertion"><div class="name">Peg insertion</div></div>
+      <div class="task"><img src="./static/images/Task_Suite/gear_assembly.jpg" alt="Gear assembly"><div class="name">Gear assembly</div></div>
+      <div class="task"><img src="./static/images/Task_Suite/nut_threading.jpg" alt="Nut threading"><div class="name">Nut threading</div></div>
+      <h4 class="gh gh-real">Real world</h4>
+      <div class="task"><img src="./static/images/Task_Suite/real_cube_pickup.jpg" alt="Cube pickup"><div class="name">Cube pickup</div></div>
+      <div class="task"><img src="./static/images/Task_Suite/real_peg_insertion.jpg" alt="Peg insertion"><div class="name">Peg insertion</div></div>
+    </div>
+    <p class="caption" style="margin-top: 22px;">
+      From a stable grasp and release (box placement) to tight-clearance alignment (peg insertion), multi-point meshing (gear assembly) and helical contact under continuous force (nut threading).
+    </p>
+  </div>
+</section>
+
+<!-- ======================================================================
+     TACTILE DEMONSTRATIONS
+     ====================================================================== -->
+<section id="demos">
+  <div class="container">
+    <span class="eyebrow">What TaRL sees</span>
+    <h2>Tactile demonstrations</h2>
+    <!-- <p class="lede">
+      TaRL is trained only on sequences like these: the RGB view is shown for reference, but the reward model receives just the two
+      fingertip <strong>deformation maps</strong> below it. Successful rollouts are regressed to increasing progress, failed rollouts to zero.
+    </p> -->
+    <h4 class="row-label">Successful demonstrations</h4>
+    <div class="videos three">
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/gear_success/demo.mp4" type="video/mp4"></video></div><div class="lbl">Gear assembly</div></div>
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/nut_success/demo.mp4" type="video/mp4"></video></div><div class="lbl">Nut threading</div></div>
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/peg_success/demo.mp4" type="video/mp4"></video></div><div class="lbl">Peg insertion</div></div>
+    </div>
+    <h4 class="row-label">Failed demonstrations</h4>
+    <div class="videos three">
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/gear_failure/demo.mp4" type="video/mp4"></video></div><div class="lbl">Gear assembly</div></div>
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/nut_failure/demo.mp4" type="video/mp4"></video></div><div class="lbl">Nut threading</div></div>
+      <div class="item portrait"><div class="video-frame"><video autoplay muted loop playsinline><source src="./static/video/peg_failure/demo.mp4" type="video/mp4"></video></div><div class="lbl">Peg insertion</div></div>
+    </div>
+    <p class="caption" style="margin-top: 20px;">Deformation maps are simulated with TacSL; each arrow is the 3D displacement of one marker on the sensor gel.</p>
+  </div>
+</section>
+
+<!-- ======================================================================
+     RESULTS
+     ====================================================================== -->
+<section id="results">
+  <div class="container">
+    <span class="eyebrow">Experiments</span>
+    <h2>Experiment Results</h2>
+    <!-- <p class="lede">
+      TaRL is trained on demonstrations from a <strong>single object position</strong>, downstream policies are evaluated on a
+      <strong>disjoint set of positions</strong>. Any benefit therefore reflects generalization to out-of-distribution object configurations.
+    </p> -->
+
+    <!-- Q1 -->
+    <div class="q">
+      <h3><span class="n">Q1</span> Does TaRL improve downstream RL?</h3>
+      <p>
+        TaRL is added as a shaping reward on top of a basic task reward that has no terms for grasping or contact, and policies are evaluated at object positions not used for the demonstrations.
+      </p>
+      <div class="plots four">
+        <div class="plot"><img src="./static/images/TaRL/box_TaRL2.png" alt="Box placement"><div class="lbl">Box placement</div></div>
+        <div class="plot"><img src="./static/images/TaRL/peg_TaRL2.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+        <div class="plot"><img src="./static/images/TaRL/gear_TaRL2.png" alt="Gear assembly"><div class="lbl">Gear assembly</div></div>
+        <div class="plot"><img src="./static/images/TaRL/nut_TaRL2.png" alt="Nut threading"><div class="lbl">Nut threading</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Downstream RL efficiency.</b> Success rate over training iterations <span style="color:#3b6fd6;font-weight:600">with</span> and <span style="color:#c03bb0;font-weight:600">without</span> TaRL.</figcaption>
+      </figure>
+      <h4>Reward quality at unseen object positions</h4>
+      <p>
+        Predicted rewards on held-out successful and failed trajectories, at the demonstration position (ID) and at positions never seen by the reward model (OOD).
+      </p>
+      <div class="plots four">
+        <div class="plot"><img src="./static/images/Rolling/box_rolling-2.png" alt="Box placement"><div class="lbl">Box placement</div></div>
+        <div class="plot"><img src="./static/images/Rolling/peg_rolling.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+        <div class="plot"><img src="./static/images/Rolling/gear_rolling.png" alt="Gear assembly"><div class="lbl">Gear assembly</div></div>
+        <div class="plot"><img src="./static/images/Rolling/nut_rolling.png" alt="Nut threading"><div class="lbl">Nut threading</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Generalization to unseen object positions.</b> Predicted reward at each timestep, averaged over successful and failed trajectories at in-domain (ID) and out-of-distribution (OOD) positions.</figcaption>
+      </figure>
+      <div class="takeaway"><b>Takeaway.</b> TaRL improves both learning efficiency and performance on contact-rich manipulation tasks, and its reward generalizes to unseen object configurations</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q">
+      <h3><span class="n">Q2</span> How does TaRL compare with a visual reward model?</h3>
+      <p>
+        TaRL is compared with <a href="https://rewind-reward.github.io" target="_blank" rel="noopener">ReWiND</a>, a visual reward model with the same architecture and training recipe, on peg insertion, gear assembly and nut threading.
+      </p>
+
+      <figure>
+        <img src="./static/images/visual_tactile_comaprison.png" alt="Tactile vs visual reward along successful rollouts at the training position and an unseen position.">
+        <figcaption><b>Generalization to unseen object position.</b> Predicted tactile and visual rewards along successful rollouts at the training position (left) and an unseen position (right). Visual model collapses at the unseen position, while TaRL does not.</figcaption>
+      </figure>
+
+      <h4>Why touch generalizes</h4>
+      <div class="plots three">
+        <div class="plot"><img src="./static/images/Traj_distribution/peg_trajectory_diversity.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+        <div class="plot"><img src="./static/images/Traj_distribution/gear_trajectory_diversity.png" alt="Gear assembly"><div class="lbl">Gear assembly</div></div>
+        <div class="plot"><img src="./static/images/Traj_distribution/nut_trajectory_diversity.png" alt="Nut threading"><div class="lbl">Nut threading</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Tactile vs. visual features.</b> t-SNE of CNN features from tactile and visual observations. Visual features at <span style="color:#3b6fd6;font-weight:600">ID</span> and <span style="color:#e8891d;font-weight:600">OOD</span> positions form distinct distributions, while tactile features share the same distribution: tactile data encodes local contact, not global scene appearance.</figcaption>
+      </figure>
+
+      <h4>Vision and touch are informative at different phases</h4>
+      <figure class="fig-w-60" style="margin-top: 12px;">
+        <img src="./static/images/episode_reward_visualize.png" alt="Visual and tactile rewards along a gear assembly trajectory.">
+        <figcaption><b>Rewards at individual contact phases.</b> On a successful gear-assembly trajectory, the <span style="color:#d98a00;font-weight:600">visual reward</span> plateaus as soon as the end-effector reaches the object, whereas the <span style="color:#0b7f7c;font-weight:600">tactile reward</span> keeps growing until task success.</figcaption>
+      </figure>
+
+      <h4>Combining tactile and visual rewards</h4>
+      <div class="plots three plots-sm">
+        <div class="plot"><img src="./static/images/TaRL_Visual/peg_TaRL_Visual.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+        <div class="plot"><img src="./static/images/TaRL_Visual/gear_TaRL_Visual.png" alt="Gear assembly"><div class="lbl">Gear assembly</div></div>
+        <div class="plot"><img src="./static/images/TaRL_Visual/nut_TaRL_Visual.png" alt="Nut threading"><div class="lbl">Nut threading</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Complementary reward shaping.</b> Downstream RL with the <span class="c-visual">visual reward</span> alone versus <b>TaRL + visual</b>. Combining both accelerates training.</figcaption>
+      </figure>
+      <div class="takeaway"><b>Takeaway.</b> TaRL generalizes to unseen object positions far better than the visual reward, and the two rewards are complementary: combining tactile and visual reward trains policies better.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q">
+      <h3><span class="n">Q3</span> Does TaRL generalize to novel object instances?</h3>
+      <p>
+        TaRL trained on <strong>box placement</strong> is deployed zero-shot to <strong>can placement</strong>, a different object with a different contact geometry, without any extra training.
+      </p>
+      <div class="plots two">
+        <div class="plot"><img src="./static/images/TaRL/meat_can_reward_quality.png" alt="Reward quality on can placement"><div class="lbl">Reward quality</div></div>
+        <div class="plot"><img src="./static/images/TaRL/meat_can_downstream_rl.png" alt="Downstream RL on can placement"><div class="lbl">Downstream RL</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Zero-shot generalization to unseen object instances.</b> <b>Left:</b> predicted rewards still separate successful from failed trajectories. <b>Right:</b> the transferred reward improves downstream RL efficiency on the new task.</figcaption>
+      </figure>
+      <div class="takeaway"><b>Takeaway.</b> TaRL captures tactile patterns shared across object instances, enabling directly generalize to new objects.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q">
+      <h3><span class="n">Q4</span> Is a learned tactile reward necessary?</h3>
+      <p>
+        TaRL is compared with two alternatives: feeding tactile observations directly to the actor and critic, and a handcrafted tactile reward based on a grasp detector.
+      </p>
+      <div class="plots three plots-sm">
+        <div class="plot"><img src="./static/images/TaRL_embed/gear_tactile_state2.png" alt="Gear assembly"><div class="lbl">Gear assembly</div></div>
+        <div class="plot"><img src="./static/images/TaRL_embed/peg_tactile_state2.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+        <div class="plot"><img src="./static/images/TaRL_embed/nut_tactile_state2.png" alt="Nut threading"><div class="lbl">Nut threading</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Tactile-based RL efficiency.</b> Actors and critics take tactile observations as input (<em>tactile in state</em>) or not (<em>baseline</em>). In both cases, adding TaRL as a shaping reward still brings substantial gains to learning efficiency and task success.</figcaption>
+      </figure>
+      <h4>Learned vs. handcrafted tactile rewards</h4>
+      <div class="grid-2 cmp">
+        <figure>
+          <img src="./static/images/heuristic_TaRL.png" alt="Handcrafted tactile reward versus TaRL on nut threading.">
+          <figcaption>Success rate with TaRL, handcrafted tactile reward, and baseline.</figcaption>
+        </figure>
+        <div class="note">
+          <p><strong>Handcrafted tactile reward.</strong> A tactile-based grasp detector gives a reward whenever the object is held.</p>
+          <p>Such rules are task-specific and coarse: once the object is grasped they cannot tell good behavior from bad, and every new task needs a new rule.</p>
+          <p>TaRL learns fine-grained, task-specific feedback from demonstrations and reaches high success far earlier.</p>
+        </div>
+      </div>
+      <div class="takeaway"><b>Takeaway.</b> Tactile inputs alone do not yield useful rewards, and handcrafted tactile rewards cannot provide fine-grained, task-specific signals across tasks. A learned tactile reward is both the most general and the most effective way to guide training.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q">
+      <h3><span class="n">Q5</span> Does TaRL enable real-world RL?</h3>
+      <p>
+        On a LeRobot SO-101, policies are trained offline with IQL on the same data, labeled with sparse success rewards only or additionally with TaRL's dense progress rewards.
+      </p>
+      <div class="plots three plots-sm">
+        <div class="plot"><img src="./static/images/Real_world/cube_pickup.png" alt="Cube pickup"><div class="lbl">Cube pickup</div></div>
+        <div class="plot"><img src="./static/images/Real_world/peg_pickup.png" alt="Peg pickup"><div class="lbl">Peg pickup</div></div>
+        <div class="plot"><img src="./static/images/Real_world/peg_insertion.png" alt="Peg insertion"><div class="lbl">Peg insertion</div></div>
+      </div>
+      <figure>
+        <figcaption><b>Real-world RL efficiency.</b> Success rate during inference <span style="color:#e8891d;font-weight:600">with</span> and <span style="color:#3b6fd6;font-weight:600">without</span> TaRL.</figcaption>
+      </figure>
+      <div class="takeaway"><b>Takeaway.</b> TaRL improves contact-rich manipulation tasks in real world.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     ROLLOUT VIDEOS
+     ====================================================================== -->
+<section id="rollouts">
+  <div class="container">
+    <span class="eyebrow">Videos</span>
+    <h2>Real-world rollouts</h2>
+    <!-- <p class="lede">
+      Policies trained offline with IQL on the same data, labeled with sparse success rewards only (<em>without TaRL</em>) or additionally with TaRL's dense
+      tactile progress rewards (<em>with TaRL</em>). Object positions differ from the ones used to train the reward model.
+    </p> -->
+
+    <h4 class="row-label">Cube pickup</h4>
+    <div class="videos two wide-pair">
+      <div class="item wide"><div class="video-frame"><video autoplay muted loop playsinline controls><source src="./static/video/real_world/cube_failure.mp4" type="video/mp4"></video></div><div class="lbl">Without TaRL</div></div>
+      <div class="item wide"><div class="video-frame"><video autoplay muted loop playsinline controls><source src="./static/video/real_world/cube_success.mp4" type="video/mp4"></video></div><div class="lbl">With TaRL</div></div>
+    </div>
+
+    <h4 class="row-label">Peg insertion</h4>
+    <div class="videos two wide-pair">
+      <div class="item wide"><div class="video-frame"><video autoplay muted loop playsinline controls><source src="./static/video/real_world/peg_failure.mp4" type="video/mp4"></video></div><div class="lbl">Without TaRL</div></div>
+      <div class="item wide"><div class="video-frame"><video autoplay muted loop playsinline controls><source src="./static/video/real_world/peg_success_2x.mp4" type="video/mp4"></video></div><div class="lbl">With TaRL</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     BIBTEX
+     ====================================================================== -->
+<section id="bibtex">
+  <div class="container narrow">
+    <h2>BibTeX</h2>
+    <div class="bib-wrap">
+      <button class="copy-btn" onclick="copyBib(this)">Copy</button>
+<pre class="bib" id="bib">@inproceedings{wu2026tarl,
+  title     = {{TaRL}: Learning General and Physical Rewards from Tactile Demonstrations},
+  author    = {Wu, Po-Yi and Chang, Dao-Jan and Hsiao, Shang-Ya and Chen, Hong-Ming and Su, Yu-Cheng and Ke, Tsung-Wei},
+  year      = {2026}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>
+      Website template inspired by <a href="https://nerfies.github.io/" target="_blank" rel="noopener">Nerfies</a> and
+      <a href="https://rewind-reward.github.io/" target="_blank" rel="noopener">ReWiND</a>.
+      Icons are inline SVG.
+    </p>
+  </div>
+</footer>
+
+<script>
+  function copyBib(btn) {
+    var text = document.getElementById('bib').innerText;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    });
+  }
+</script>
+</body>
+</html>
