@@ -512,7 +512,7 @@
 
     <!-- Video -->
     <div class="content-block" style="margin-bottom:3.5rem;">
-      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">Same Backbone, Only the Source Changes</h3>
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">CNP-Flow Improves Video Prediction and Interpolation with the Same Backbone</h3>
       <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;">
         RIVER is the flow matching backbone with a standard Gaussian source. CNP-Flow keeps that backbone
         and swaps in the learned conditional source. \(p \rightarrow k\): \(p\) observed frames generate
@@ -550,7 +550,7 @@
 
     <!-- Motion planning -->
     <div class="content-block" style="margin-bottom:3.5rem;">
-      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">The Same Idea Transfers from Pixels to Robot Trajectories</h3>
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">CNP-Flow Also Improves Robot Motion Planning</h3>
       <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;">
         7-DoF Franka Panda motion planning, 15 sampling steps for all methods, averaged over three seeds.
         Replacing the diffusion planner (MPD) with a flow model of similar size changes nothing outside
@@ -574,7 +574,7 @@
 
     <!-- Qualitative -->
     <div class="content-block-wide" style="margin-bottom:3.5rem;">
-      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;max-width:780px;margin-left:auto;margin-right:auto;">What the Learned Source Fixes</h3>
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;max-width:780px;margin-left:auto;margin-right:auto;">The Learned Source Reduces Drift and Collisions</h3>
       <div class="fig-wrap">
         <img src="figures/qualitative.png" alt="Qualitative comparison on CLEVRER and Franka Panda">
       </div>
@@ -590,16 +590,17 @@
 
     <!-- Efficiency -->
     <div class="content-block">
-      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;">A Better Start Needs Fewer Steps</h3>
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;">CNP-Flow Reaches Higher Quality with Fewer Sampling Steps</h3>
       <div class="fig-wrap">
         <img src="figures/efficiency_chart.png" alt="Inference efficiency on KTH prediction">
       </div>
       <p class="fig-cap sans">
-        KTH prediction, quality vs. number of function evaluations (NFE). Because the predicted source already
-        sits near the data manifold, the ODE no longer has to cross the gap from a standard Gaussian; every
-        step is local refinement. The standard Gaussian baseline plateaus at PSNR ≈ 26.5 from NFE = 10 onward.
-        CNP-Flow passes that plateau at NFE = 5 and keeps rising to ≈ 28.2 by NFE = 10. Five steps of CNP-Flow
-        beat fifty steps of the baseline.
+        KTH prediction. The plots show PSNR and SSIM against the number of function evaluations (NFE).
+        The CNP predicts a source that is near the data manifold. Thus the ODE does not have to move
+        samples from a standard Gaussian to the data manifold first. Each step makes a small correction.
+        The standard Gaussian baseline reaches a PSNR of 26.5 at NFE = 10 and does not increase after that.
+        CNP-Flow reaches a PSNR of 27.5 at NFE = 5 and 28.2 at NFE = 10. CNP-Flow at NFE = 5 has a higher
+        PSNR than the baseline at NFE = 50.
       </p>
     </div>
   </div>
