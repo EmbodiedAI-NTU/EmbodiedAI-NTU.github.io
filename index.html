@@ -229,7 +229,128 @@
     .people-list a:hover {
       color: #1d4ed8;
     }
+
+    .people-cards {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .people-cards li {
+      width: 160px;
+      text-align: center;
+      color: #374151;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .people-cards.text-only {
+      gap: 1.25rem 1.25rem;
+    }
+
+    .people-cards.text-only li {
+      width: auto;
+      min-width: 160px;
+    }
+
+    .people-cards .name-zh {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .people-cards img {
+      width: 120px;
+      height: 150px;
+      object-fit: contain;
+      object-position: center bottom;
+      border-radius: 6px;
+      display: block;
+      margin: 0 auto 0.5rem;
+    }
+
+    .people-cards a {
+      color: #2563eb;
+    }
+
+    .people-cards a:hover {
+      color: #1d4ed8;
+    }
     
+    .group-photos {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      max-width: 760px;
+      margin: 0 auto 2rem;
+    }
+
+    .group-photo-tabs {
+      flex: 0 0 110px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding-top: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .group-photo-tabs a {
+      color: #6b7280;
+      text-decoration: none;
+      padding: 0.2rem 0 0.2rem 0.75rem;
+      border-left: 2px solid #e5e7eb;
+    }
+
+    .group-photo-tabs a:hover {
+      color: #1f2937;
+    }
+
+    .group-photo-tabs a.active {
+      color: #1f2937;
+      font-weight: 600;
+      border-left-color: #1f2937;
+    }
+
+    .group-photos figure {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      display: none;
+    }
+
+    .group-photos figure.active {
+      display: block;
+    }
+
+    .group-photos img {
+      width: 100%;
+      display: block;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .group-photos {
+        flex-direction: column;
+      }
+      .group-photo-tabs {
+        flex: none;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      .group-photo-tabs a {
+        padding: 0 0 2px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+      }
+      .group-photo-tabs a.active {
+        border-bottom-color: #1f2937;
+      }
+    }
+
     /* Footer */
     footer {
       padding-top: 2rem;
@@ -247,7 +368,32 @@
       <div class="header-line"></div>
     </div>
     
-    <img src="assets/group_photo.jpg" alt="EAI Lab Group Photo" style="max-width: 600px; width: 100%; display: block; margin: 0 auto 2rem; border-radius: 4px;">
+    <div class="group-photos">
+      <nav class="group-photo-tabs"></nav>
+      <figure class="active" data-label="2026 Spring">
+        <img src="assets/group_photo/group_photo_2026_spring.jpg" alt="EAI Lab group photo, 2026 Spring">
+      </figure>
+    </div>
+    <script>
+      (function () {
+        const figures = Array.from(document.querySelectorAll('.group-photos figure'));
+        const nav = document.querySelector('.group-photo-tabs');
+        figures.forEach((fig, i) => {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.textContent = fig.dataset.label;
+          if (fig.classList.contains('active')) a.classList.add('active');
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            figures.forEach((f) => f.classList.remove('active'));
+            nav.querySelectorAll('a').forEach((t) => t.classList.remove('active'));
+            fig.classList.add('active');
+            a.classList.add('active');
+          });
+          nav.appendChild(a);
+        });
+      })();
+    </script>
     
     <!-- Description -->
     <div class="description">
@@ -269,6 +415,22 @@
       <div class="section-line"></div>
       <ul>
         <li>
+          <span class="pub-title">Learning Conditional Source Distribution via Flow Reversal for Temporal Flow Matching</span>
+          <div class="pub-authors">
+            <strong>Kuan-Hsun Tu</strong><sup>*</sup>, Hsuan-Chi Liu<sup>&dagger;*</sup>, Jia-Wei Liao<sup>*</sup>, Chien-Sheng Chiang, Cheng-Fu Chou, and Tsung-Wei Ke
+          </div>
+          <div class="pub-venue">In submission</div>
+          <div class="pub-links">arXiv / Code / <a href="https://embodiedai-ntu.github.io/cnpflow/index.html">Project Page</a></div>
+        </li>
+        <li>
+          <span class="pub-title">Task Inference Beyond Least Squares in Behavioral Foundation Models</span>
+          <div class="pub-authors">
+            <strong>Kuan-Hsun Tu</strong><sup>*</sup>, Chien-Sheng Chiang<sup>&dagger;*</sup>, Hsin-Wei Chen, and Tsung-Wei Ke
+          </div>
+          <div class="pub-venue">NeurIPS 2026 PTA Workshop</div>
+          <div class="pub-links">arXiv / Code / <a href="https://embodiedai-ntu.github.io/BLS/index.html">Project Page</a></div>
+        </li>
+        <li>
           <span class="pub-title">TaRL: Learning General and Physical Rewards from Tactile Demonstrations</span>
           <div class="pub-authors">
             Po-Yi Wu<sup>1</sup>, Dao-Jan Chang<sup>1</sup>, Shang-Ya Hsiao<sup>2</sup>, Hong-Ming Chen<sup>2</sup>, Yu-Cheng Su<sup>2</sup>, Tsung-Wei Ke<sup>1</sup>
@@ -276,7 +438,7 @@
           <div class="pub-affiliations">
             <sup>1</sup>National Taiwan University, <sup>2</sup>Delta Electronics
           </div>
-          <div class="pub-venue">In submission</div>
+          <div class="pub-venue">ArXiv 2026</div>
           <div class="pub-links">
             <a href="https://arxiv.org/abs/2609.36785">arXiv</a> / Code / <a href="https://embodiedai-ntu.github.io/tarl/index.html">Project Page</a>
           </div>
@@ -286,7 +448,7 @@
           <div class="pub-authors">
             Chiensheng Chiang<sup>*</sup>, <strong>Kuan-Hsun Tu</strong><sup>*&dagger;</sup>, Jia-Wei Liao<sup>*</sup>, Cheng-Fu Chou, and Tsung-Wei Ke
           </div>
-          <div class="pub-venue">IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2026</div>
+          <div class="pub-venue">CVPR 2026</div>
           <div class="pub-links">
             <a href="https://arxiv.org/abs/2603.13395v1">arXiv</a> / <a href="https://github.com/EmbodiedAI-NTU/COT-FM">Code</a> / <a href="https://embodiedai-ntu.github.io/cotfm/index.html">Project Page</a>
           </div>
@@ -307,7 +469,7 @@
           <div class="pub-affiliations">
             <sup>1</sup>National Taiwan University, <sup>2</sup>Stanford University
           </div>
-          <div class="pub-venue">In submission</div>
+          <div class="pub-venue">ArXiv 2025</div>
           <div class="pub-links">
             <a href="https://arxiv.org/abs/2510.08475">arXiv</a> / <a href="https://github.com/EmbodiedAI-NTU/DexMan">Code</a> / <a href="https://embodiedai-ntu.github.io/dexman/index.html">Project Page</a>
           </div>
@@ -320,7 +482,7 @@
           <div class="pub-affiliations">
             <sup>1</sup>National Taiwan University
           </div>
-          <div class="pub-venue">ArXiv</div>
+          <div class="pub-venue">ArXiv 2025</div>
           <div class="pub-links">
             <a href="https://arxiv.org/abs/2510.01531">arXiv</a> / <a href="https://github.com/InfoSeekerLLM/InfoSeeker">Code</a> / <a href="https://infoseekerllm.github.io/">Project Page</a>
           </div>
@@ -334,44 +496,53 @@
       <div class="people-section">
         <div class="people-group">
           <h3>Professor</h3>
-          <ul class="people-list">
-            <li><a href="https://twke18.github.io/">Tsung-Wei Ke</a></li>
+          <ul class="people-cards">
+            <li><a href="https://twke18.github.io/"><img src="assets/people/tsung_wei_ke.jpg" alt="Tsung-Wei Ke">Tsung-Wei Ke<br><span class="name-zh">(柯宗瑋)</span></a></li>
           </ul>
         </div>
         <div class="people-group">
-          <h3>Lab Members</h3>
-          <ul class="people-list">
-            <li><a href="https://syun413.github.io/">Kuan-Hsun Tu</a></li>
-            <li>Jhen Hsieh</li>
-            <li>Fang Jeff</li>
-            <li><a href="https://alexpeng517.github.io/">Li-Xuan Peng</a></li>
-            <li>Jian-Sheng Jiang</li>
-            <li>Yen-Hsiang Chen</li>
-            <li>Li-Chen Kao</li>
-            <li>Dian Cheng</li>
-            <li>Hsin-Wei Chen</li>
-            <li>Chun-Yang Cheng</li>
-            <li>Wei-Lun Hsiao</li>
-            <li>Yu-Tsen Tsai</li>
-            <li>Jui-Chia Huwang</li>
-            <li>Tao-Jan Chang</li>
-            <li>We-Hsiang Cui</li>
-            <li>Po-Ke Fan</li>
-            <li>Cheng-Ting Tsai</li>
+          <h3>Master Students</h3>
+          <ul class="people-cards">
+            <li><a href="https://alexpeng517.github.io/"><img src="assets/people/li_xuan_peng.jpg" alt="Li-Xuan Peng">Li-Xuan Peng<br><span class="name-zh">(彭立軒)</span></a></li>
+          </ul>
+          <ul class="people-cards text-only">
+            <li>Fang Jeff<br><span class="name-zh">(方世昕)</span></li>
+            <li>Hsuan-Chi Liu<br><span class="name-zh">(劉軒齊)</span></li>
+            <li>Jui-Chia Huang<br><span class="name-zh">(黃睿加)</span></li>
+            <li>Tao-Jan Chang<br><span class="name-zh">(張道然)</span></li>
+          </ul>
+        </div>
+        <div class="people-group">
+          <h3>Undergraduate Students</h3>
+          <ul class="people-cards">
+            <li><a href="https://syun413.github.io/"><img src="assets/people/kuan_hsun_tu.jpg" alt="Kuan-Hsun Tu">Kuan-Hsun Tu<br><span class="name-zh">(杜冠勳)</span></a></li>
+            <li><img src="assets/people/chien_sheng_chiang.jpg" alt="Chien-Sheng Chiang">Chien-Sheng Chiang<br><span class="name-zh">(江建陞)</span></li>
+            <li><img src="assets/people/jhen_hsieh.jpg" alt="Jhen Hsieh">Jhen Hsieh<br><span class="name-zh">(謝震)</span></li>
+            <li><img src="assets/people/chun_yang_cheng.jpg" alt="Chun-Yang Cheng">Chun-Yang Cheng<br><span class="name-zh">(鄭峻揚)</span></li>
+            <li><img src="assets/people/wei_lun_hsiao.jpg" alt="Wei-Lun Hsiao">Wei-Lun Hsiao<br><span class="name-zh">(蕭葦倫)</span></li>
+            <li><img src="assets/people/daisy_yuhsin_huang.jpg" alt="Daisy Yuhsin Huang">Daisy Yuhsin Huang<br><span class="name-zh">(黃予星)</span></li>
+          </ul>
+          <ul class="people-cards text-only">
+            <li>Yen-Hsiang Chen<br><span class="name-zh">(陳彥翔)</span></li>
+            <li>Li-Chen Kao<br><span class="name-zh">(高立辰)</span></li>
+            <li>Dian Cheng<br><span class="name-zh">(鄭琠)</span></li>
+            <li>Hsin-Wei Chen<br><span class="name-zh">(陳忻韋)</span></li>
+            <li>Yu-Tsen Tsai<br><span class="name-zh">(蔡侑岑)</span></li>
+            <li>We-Hsiang Chiu<br><span class="name-zh">(邱威翔)</span></li>
+            <li>Po-Ke Fan<br><span class="name-zh">(范柏格)</span></li>
+            <li>Cheng-Ting Tsai<br><span class="name-zh">(蔡政廷)</span></li>
           </ul>
         </div>
         <div class="people-group">
           <h3>Alumni</h3>
-          <ul class="people-list">
-            <li>Pang-Chi Lo</li>
-            <li>Jhao-Hsun Lai</li>
-            <li>Djengo Cyun-Jyun Fang</li>
-            <li>Po-Yi Wu</li>
-            <li>Hsuan-Chi Liu</li>
+          <ul class="people-cards text-only">
+            <li>Pang-Chi Lo<br><span class="name-zh">(羅邦齊)</span></li>
+            <li>Jhao-Hsun Lai<br><span class="name-zh">(賴昭勳)</span></li>
+            <li>Djengo Cyun-Jyun Fang<br><span class="name-zh">(方群鈞)</span></li>
+            <li>Po-Yi Wu<br><span class="name-zh">(吳柏毅)</span></li>
           </ul>
         </div>
       </div>
-      <!-- Future update: add individual member photos when assets and profile links are ready. -->
     </section>
     
     <!-- Footer -->

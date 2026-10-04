@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BLS: Task Inference Beyond Least Squares in Behavioral Foundation Models</title>
+  <meta name="description" content="BLS is an offline zero-shot task inference method for Behavioral Foundation Models that goes beyond ordinary least squares by jointly reducing reward reconstruction error and successor-measure mismatch.">
+  <meta name="keywords" content="behavioral foundation models, zero-shot reinforcement learning, successor measure, task inference, forward-backward representation, OGBench, DMC, HumEnv">
+  <meta name="author" content="Kuan-Hsun Tu, Chien-Sheng Chiang, Hsin-Wei Chen, Tsung-Wei Ke">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="BLS: Task Inference Beyond Least Squares in Behavioral Foundation Models">
+  <meta property="og:description" content="A test-time task inference method for BFMs that balances reward reconstruction with successor-measure alignment.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dexman/static/css/bulma.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/index.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+  <style>
+    /* ── Fonts ── */
+    body, p, li, .hero, .section,
+    .title, .subtitle, h1, h2, h3, h4, h5, h6,
+    .body-text, .publication-title {
+      font-family: 'Libre Baskerville', Georgia, serif !important;
+    }
+    .sans, .publication-authors, .publication-affiliations,
+    .publication-links, .eql-cntrb, .fig-cap, .table-caption,
+    button, pre, code {
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+    }
+
+    /* ── Header ── */
+    .publication-header .hero-body { padding: 5rem 1.5rem 3.5rem; }
+
+    .publication-title {
+      font-size: clamp(2rem, 4.2vw, 2.75rem) !important;
+      line-height: 1.15 !important;
+      margin-bottom: 0.7rem !important;
+      color: #111 !important;
+    }
+    .publication-venue {
+      background: none !important; border: none !important; padding: 0 !important;
+      color: #555 !important; font-size: 1.3rem !important; font-weight: 600 !important;
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+      display: block; margin: 0.35rem auto 1.2rem !important;
+    }
+    .publication-authors {
+      color: #2563eb !important; font-size: 1.2rem !important;
+      font-weight: 400 !important; gap: 1.6rem !important; margin-top: 0 !important;
+    }
+    .publication-authors a { color: #2563eb !important; }
+    .publication-authors .author-block::after { content: '' !important; }
+    .publication-affiliations {
+      font-size: 1.1rem !important; color: #555 !important;
+      margin-top: 0.35rem !important; gap: 0 !important;
+    }
+    .publication-affiliations .affiliation-block::after { content: '' !important; }
+    .eql-cntrb {
+      font-size: 0.95rem !important; color: #888 !important; margin-top: 0.25rem !important;
+    }
+    .publication-links { margin-top: 1.2rem !important; gap: 0 !important; }
+    .publication-links .external-link.button {
+      background: none !important; border: none !important; box-shadow: none !important;
+      color: #2563eb !important; font-family: 'Source Sans 3', Arial, sans-serif !important;
+      font-size: 1.15rem !important; font-weight: 600 !important; padding: 0.25rem 1rem !important;
+      text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #93c5fd;
+    }
+    .publication-links .external-link.button:hover {
+      background: none !important; color: #1d4ed8 !important; transform: none !important;
+    }
+    .publication-links .external-link.button .icon { display: none !important; }
+    .publication-links .external-link.button.no-link {
+      color: #111 !important; text-decoration: none !important;
+      cursor: default !important; pointer-events: none !important;
+    }
+
+    /* ── Layout ── */
+    .content-section { padding: 3rem 1.5rem; }
+    .content-section.shaded {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .content-section.white {
+      background: #ffffff;
+    }
+    .content-block { max-width: 780px; margin: 0 auto; }
+    .content-block-wide { max-width: 960px; margin: 0 auto; }
+
+    .section-heading {
+      font-size: 1.65rem; font-weight: 700; color: #111;
+      margin-bottom: 1.4rem; padding-bottom: 0.55rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* ── Body text ── */
+    .body-text {
+      font-size: 1.1rem;
+      line-height: 1.85;
+      color: #111;
+    }
+    .body-text p { margin-bottom: 1rem; }
+
+    /* ── Math ── */
+    .math-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      margin: 1.2rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* ── Theorem ── */
+    .theorem-box {
+      border-left: 4px solid #2563eb;
+      background: #f8fafc;
+      padding: 1rem 1.4rem;
+      margin: 1.2rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .theorem-box .thm-title { font-weight: 700; color: #111; margin-bottom: 0.4rem; }
+
+    /* ── Algorithm ── */
+    .algo-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      margin: 1.2rem 0;
+    }
+    .algo-box ol { margin-left: 1.4rem; }
+    .algo-box li { margin-bottom: 0.4rem; }
+
+    /* ── Figures ── */
+    .fig-wrap { margin: 1.5rem 0; }
+    .fig-wrap img {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      display: block;
+    }
+    .fig-cap {
+      font-size: 0.92rem;
+      color: #444;
+      line-height: 1.6;
+      margin-top: 0.6rem;
+    }
+    .fig-cap strong { color: #111; }
+
+    /* ── Results tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.05rem;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      color: #111;
+      font-variant-numeric: tabular-nums;
+    }
+    .results-table thead tr:first-child th { border-top: 2px solid #111; }
+    .results-table thead tr:last-child { border-bottom: 1.5px solid #555; }
+    .results-table tbody { border-bottom: 2px solid #111; }
+    .results-table th {
+      font-weight: 700;
+      padding: 0.45rem 0.9rem;
+      text-align: center !important;
+      background: none;
+      white-space: nowrap;
+      color: #111;
+    }
+    .results-table th:first-child { text-align: left !important; }
+    .results-table th.cmidrule { border-bottom: 1px solid #555; }
+    .results-table th.no-cmidrule { border-bottom: none; }
+    .results-table td {
+      padding: 0.35rem 0.9rem;
+      text-align: center;
+      color: #111;
+      border: none;
+      white-space: nowrap;
+    }
+    .results-table td:first-child { text-align: left; }
+    .results-table .sep td { border-top: 1px solid #ccc; }
+    .results-table .group-row td {
+      font-weight: 600;
+      padding-top: 0.6rem;
+      padding-bottom: 0.1rem;
+      color: #333;
+      font-size: 1.05rem;
+    }
+    .results-table .ours td {
+      font-weight: 700;
+      color: #111;
+      background: #fefce8;
+    }
+    .results-table .avg td { font-weight: 700; border-top: 1.5px solid #555; }
+    .results-table .indent td:first-child { padding-left: 2rem; }
+
+    /* ── BibTeX ── */
+    pre {
+      background: #f8fafc !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important; padding: 1.2rem 1.4rem !important;
+      font-size: 0.88rem !important; overflow-x: auto;
+      font-family: 'SF Mono', 'Monaco', monospace !important;
+    }
+    .copy-btn {
+      background: #2563eb; color: white; border: none;
+      border-radius: 5px; padding: 0.4rem 0.9rem;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #1d4ed8; }
+    .copy-btn.ok { background: #10b981; }
+
+    /* ── Scroll to top ── */
+    .scroll-to-top {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 44px; height: 44px;
+      background: #2563eb; color: white; border: none; border-radius: 50%;
+      cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .scroll-to-top.visible { opacity: 1; visibility: visible; }
+    .scroll-to-top:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+    hr.divider { border: none; border-top: 1px solid #e2e8f0; margin: 0; }
+    .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 2.5rem 1.5rem; }
+    .footer .content { color: #64748b; font-size: 0.9rem; font-family: 'Source Sans 3', Arial, sans-serif !important; }
+    .footer a { color: #2563eb; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<section class="hero publication-header">
+  <div class="hero-body">
+    <div class="container is-max-desktop has-text-centered">
+      <h1 class="publication-title">Task Inference Beyond Least Squares<br>in Behavioral Foundation Models</h1>
+      <div class="publication-venue">NeurIPS 2026 PTA Workshop</div>
+      <div class="publication-authors">
+        <span class="author-block"><a href="https://syun413.github.io/" target="_blank">Kuan-Hsun Tu</a><sup>*</sup></span>
+        <span class="author-block">Chien-Sheng Chiang<sup>†*</sup></span>
+        <span class="author-block">Hsin-Wei Chen</span>
+        <span class="author-block"><a href="https://twke18.github.io/" target="_blank">Tsung-Wei Ke</a></span>
+      </div>
+      <div class="publication-affiliations">
+        <span class="affiliation-block">National Taiwan University</span>
+      </div>
+      <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;&nbsp; † Corresponding author</p>
+      <div class="publication-links" style="margin-top:1.25rem;">
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>ArXiv</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>Paper</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>Code</span>
+          </a>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TEASER ========== -->
+<section class="hero teaser" style="padding-bottom:0;">
+  <div class="hero-body" style="padding-bottom:2rem;">
+    <div class="container is-max-desktop">
+      <div class="teaser-figure">
+        <img src="figures/teaser.png" alt="BLS teaser" class="teaser-media">
+      </div>
+      <p class="fig-cap sans" style="margin-top:1rem;">
+        <strong>OLS vs. BLS.</strong> Ordinary least squares (OLS) minimizes the total reconstruction error of
+        rewards, so it is biased toward the majority of states: low-reward states \(N\) may be assigned
+        high-value rewards and vice versa for high-reward states \(G\). The successor measure of the
+        retrieved zero-shot policy then diverges from that of the optimal policy. BLS instead reduces
+        reconstruction error while enlarging the margin between high- and low-reward states, keeping the
+        zero-shot policy's successor measure closer to the optimal policy's.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ========== ABSTRACT ========== -->
+<div class="content-section">
+  <div class="content-block">
+    <h2 class="section-heading">Overview</h2>
+    <div class="body-text">
+      <p>
+        A Behavioral Foundation Model (BFM) is a single pretrained policy that can take on a new task
+        instantly. You hand it a reward function, it turns that reward into a short <em>task vector</em>,
+        and the policy conditioned on that vector is ready to run. No fine-tuning, no planning.
+      </p>
+      <p>
+        The catch is in how the task vector is computed. Almost every BFM uses ordinary least squares
+        (OLS): fit the reward as well as possible <em>on average</em> over all states. But the states that
+        matter most, the few high-reward ones, are usually a tiny minority. OLS happily trades accuracy on
+        them for accuracy on the crowd of low-reward states, and the policy ends up chasing the wrong
+        places.
+      </p>
+      <p>
+        <strong>BLS</strong> starts from the OLS solution and nudges it with one extra rule: keep high-reward
+        states scored above low-reward states. This is a few hundred gradient steps on a small vector,
+        under a second on a GPU, and it needs no environment interaction. Across navigation, manipulation,
+        locomotion, and humanoid benchmarks, this simple change gives consistently better zero-shot
+        policies than OLS and than prior inference methods, including ones that use online data.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== BACKGROUND ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Background: Zero-shot RL with Linear Rewards</h2>
+
+    <div class="body-text">
+      <p>
+        A BFM represents every state and <em>all possible</em> tasks as vectors in a joint latent space,
+        where their inner products define linear reward functions:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        r_z(s) = \phi(s)^\top z
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        Here \(\phi : \mathcal{S} \to \mathbb{R}^d\) is a state feature map and \(z \in \mathbb{R}^d\) is the
+        task vector. For each \(z\), the BFM trains a policy \(\pi_z\) by modeling its
+        <strong>successor measure</strong> \(M^{\pi_z}(s^+ \mid s, a) = \sum_t \gamma^t \Pr(s_{t+1} = s^+ \mid s, a; \pi_z)\)
+        and maximizing \(Q^{\pi_z}_{r_z}(s,a) = \sum_{s^+} M^{\pi_z}(s^+ \mid s,a)\,\phi(s^+)^\top z\).
+      </p>
+      <p>
+        At test time, given any reward function \(r\), the task vector is calculated via OLS:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        \hat{z}_{\mathrm{OLS}} = \underset{z}{\mathrm{argmin}}\;
+        \mathbb{E}_s\!\left[\lVert \phi(s)^\top z - r(s) \rVert_2^2\right]
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        If \(r\) lies in the span of \(\phi\), OLS reconstructs \(r\) exactly and \(\pi_{\hat{z}_{\mathrm{OLS}}}\)
+        is optimal. In practice, downstream rewards rarely lie in this span, so the reconstruction has
+        non-negligible errors. Crucially, OLS only cares about the <em>total</em> error over all states.
+        When rewards are dense but high-reward states are sparse, OLS is pulled toward the majority of
+        low-reward states, leaving high-value rewards poorly reconstructed and the retrieved policy
+        suboptimal.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== METHOD ========== -->
+<div class="content-section">
+  <div class="content-block">
+    <h2 class="section-heading">Our Insight: Two Sources of Suboptimality</h2>
+
+    <div class="body-text">
+      <p>
+        Let \(r\) and \(\hat{r}\) be the original and reconstructed reward functions, and \(\pi_r\) and
+        \(\pi_{\hat{r}}\) their optimal policies. The suboptimality gap is
+        \(\mathrm{SubOpt}(r, \hat{r}) := V^{\pi_r}_r - V^{\pi_{\hat{r}}}_r\).
+      </p>
+    </div>
+
+    <div class="theorem-box">
+      <div class="thm-title sans">Theorem (Suboptimality gap)</div>
+      <div class="body-text" style="font-size:1.02rem;">
+        <p style="margin-bottom:0.5rem;">
+          Define the policy-averaged successor measure
+          \(\bar{M}^{\pi}(s^+ \mid s) := \mathbb{E}_{a \sim \pi(\cdot \mid s)}[M^{\pi}(s^+ \mid s,a)]\),
+          the successor-measure residual
+          \(\Delta M := \bar{M}^{\pi_{\hat{r}}} - \bar{M}^{\pi_r}\),
+          and the reward residual \(\Delta r := \hat{r} - r\). Then
+        </p>
+        <div class="math-block" style="margin:0.6rem 0;">
+          \[
+            \mathrm{SubOpt}(r, \hat{r}) \;\le\; \lVert \Delta M \rVert_1 \cdot \lVert \Delta r \rVert_\infty
+          \]
+        </div>
+      </div>
+    </div>
+
+    <div class="body-text">
+      <p>
+        The bound vanishes under <em>either</em> of two conditions: the reconstructed reward matches the
+        original (\(\Delta r = 0\)), or the retrieved policy's successor measure matches the optimal
+        policy's (\(\Delta M = 0\)) even when rewards are wrong. <strong>OLS pursues only the first
+        condition.</strong> Because exact reconstruction is impossible in practice, the residual rewards
+        change the policy's behavior and enlarge \(\Delta M\). BLS seeks a task vector that minimizes both
+        residuals jointly.
+      </p>
+      <p>
+        The optimal policy's successor measure is unknown at test time, so we rely on two inductive
+        biases: (1) optimal policies visit high-reward states more often than low-reward states, and
+        (2) reward functions sharing similar reward rankings tend to induce similar successor measures.
+        Preserving high-value rewards and the relative ranking of rewards is therefore a practical
+        surrogate for reducing \(\Delta M\).
+      </p>
+    </div>
+
+    <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">Soft-margin contrastive loss</h3>
+    <div class="body-text">
+      <p>
+        We split states into high-reward states \(G\) and low-reward states \(N\) with a threshold
+        \(\tau\), and enlarge the margins of reconstructed rewards between the two sets:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        \mathcal{L}_{sm}(z) = \log \sum_{s \in G} \exp\!\big(-\phi(s)^\top z\big)
+          + \log \sum_{s \in N} \exp\!\big(\phi(s)^\top z\big)
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        The first term pushes up the lowest reconstructed rewards in \(G\); the second drives down the
+        highest ones in \(N\). Unlike a hard-margin loss that only looks at a single worst pair, the
+        log-sum-exp form accounts for all violating margins and is smooth for gradient descent.
+      </p>
+    </div>
+
+    <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">Trust-region loss</h3>
+    <div class="body-text">
+      <p>
+        The soft-margin loss alone does not control reconstruction error, so we regularize \(z\) to stay
+        close to the OLS solution, in reward space rather than parameter space:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        \mathcal{R}(z) = \mathbb{E}_s\!\left[\big\lVert \phi(s)^\top z - \phi(s)^\top \hat{z}_{\mathrm{OLS}} \big\rVert_2^2\right],
+        \qquad
+        \mathcal{L}(z) = \mathcal{L}_{sm}(z) + \lambda\, \mathcal{R}(z)
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        The coefficient \(\lambda\) correlates with reward type: sparse rewards prefer a small
+        \(\lambda\) (emphasizing margins), dense rewards prefer a large one (staying near OLS).
+      </p>
+    </div>
+
+    <div class="algo-box">
+      <div class="thm-title sans" style="font-weight:700;margin-bottom:0.6rem;">Algorithm: BLS</div>
+      <div class="body-text" style="font-size:1rem;">
+        <ol>
+          <li>Split states: \(G \gets \{s : r(s) \ge \tau\}\), \(N \gets \{s : r(s) < \tau\}\).</li>
+          <li>Initialize \(z \gets \hat{z}_{\mathrm{OLS}}\).</li>
+          <li>For \(t = 1, \ldots, T\): take a gradient step on \(\mathcal{L}_{sm}(z) + \lambda \mathcal{R}(z)\), then normalize \(z \gets z / \lVert z \rVert_2\).</li>
+          <li>Return \(z\) and retrieve the zero-shot policy \(\pi_z\).</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="body-text">
+      <p>
+        BLS runs once before executing a task. On an RTX 4090, 500 optimization steps take under 1 second
+        on OGBench and about 1.4 seconds on HumEnv, so the overhead relative to OLS is negligible. BLS is
+        architecture-agnostic: it only changes how the task vector is inferred and can be plugged into any
+        BFM, with either OLS or another inference method as the anchor.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== RESULTS ========== -->
+<div class="content-section white">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">Results</h2>
+
+    <!-- OGBench -->
+    <div style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;max-width:780px;margin-left:auto;margin-right:auto;">BLS Helps Regardless of the Feature Representation</h3>
+      <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;max-width:780px;margin-left:auto;margin-right:auto;">
+        Average zero-shot success rate (%) ↑ over 9 OGBench navigation and manipulation tasks, mean over 3 seeds.
+        The five representations are pretrained with very different objectives, yet swapping OLS for BLS
+        improves every one of them under both observation types.
+      </p>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th class="no-cmidrule" rowspan="2">Observation</th>
+              <th colspan="2" class="cmidrule">Laplacian</th>
+              <th colspan="2" class="cmidrule">ICVF</th>
+              <th colspan="2" class="cmidrule">HILP</th>
+              <th colspan="2" class="cmidrule">FB</th>
+              <th colspan="2" class="cmidrule">TD-JEPA</th>
+            </tr>
+            <tr>
+              <th>OLS</th><th>BLS</th>
+              <th>OLS</th><th>BLS</th>
+              <th>OLS</th><th>BLS</th>
+              <th>OLS</th><th>BLS</th>
+              <th>OLS</th><th>BLS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Proprioceptive</td><td>13.0</td><td><strong>18.0</strong></td><td>25.8</td><td><strong>28.3</strong></td><td>31.1</td><td><strong>39.1</strong></td><td>40.8</td><td><strong>44.8</strong></td><td>32.6</td><td><strong>45.3</strong></td></tr>
+            <tr><td>Pixel-based</td><td>24.5</td><td><strong>30.3</strong></td><td>23.2</td><td><strong>23.3</strong></td><td>33.4</td><td><strong>39.4</strong></td><td>37.5</td><td><strong>39.1</strong></td><td>35.7</td><td><strong>39.8</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Baselines -->
+    <div class="content-block" style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">Offline BLS Beats Other Inference Methods, Including Online Ones</h3>
+      <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;">
+        Average success rate (%) ↑ on OGBench. Left: BLS is not tied to OLS. Anchoring its trust region
+        to ZOL instead (FB representation) improves ZOL by the same margin. Right: averaged over the five
+        representations, BLS with zero task-specific interaction outperforms ReLA and LoLA, which adapt
+        online with 20 reward-labeled episodes per task.
+      </p>
+      <div class="columns">
+        <div class="column is-6">
+          <div class="table-wrap" style="margin-top:0;">
+            <table class="results-table">
+              <thead>
+                <tr><th style="text-align:center !important;">OLS</th><th>ZOL</th><th>BLS@OLS</th><th>BLS@ZOL</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="text-align:center;">40.8</td><td>40.2</td><td><strong>44.8</strong></td><td><strong>44.3</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="column is-6">
+          <div class="table-wrap" style="margin-top:0;">
+            <table class="results-table">
+              <thead>
+                <tr><th style="text-align:center !important;">OLS</th><th>ReLA</th><th>LoLA</th><th>BLS</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="text-align:center;">28.7</td><td>20.8</td><td>27.7</td><td><strong>35.1</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GCRL -->
+    <div class="content-block" style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;">Better Inference Closes the Gap to Goal-conditioned RL</h3>
+      <div class="fig-wrap">
+        <img src="figures/gcrl_bar.png" alt="OLS vs BLS vs GCRL on OGBench">
+      </div>
+      <p class="fig-cap sans">
+        OGBench with HILP. Hatched segments mark the improvement of BLS over OLS. Goal-conditioned RL (GCRL)
+        is trained directly on the goal-reaching objective and is told the goal explicitly, whereas zero-shot
+        RL has to infer a task vector from rewards. BLS reaches 39.1% average success, comparable to GCRL at
+        37.7%, while OLS reaches 31.1%. Most of the gap was in the inference step, not in the pretrained model.
+      </p>
+    </div>
+
+    <!-- Lambda -->
+    <div class="content-block">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;">Sparse Rewards Need the Margin, Dense Rewards Are Fine with OLS</h3>
+      <div class="fig-wrap">
+        <img src="figures/lambda.png" alt="Sensitivity to lambda">
+      </div>
+      <p class="fig-cap sans">
+        Sweeping \(\lambda\) with the HILP encoder. Small \(\lambda\) means the soft-margin loss dominates;
+        large \(\lambda\) means staying close to the OLS solution. Sparse-reward OGBench tasks (left two)
+        gain most when the margin is enforced, and collapse as \(\lambda\) grows. Dense-reward DMC domains
+        (right two) are already well served by OLS and prefer a large \(\lambda\). This is the failure mode
+        from the teaser: OLS goes wrong exactly when the high-reward states are a small minority.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!--
+<hr class="divider">
+
+========== BIBTEX ==========
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">BibTeX</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+      <span class="sans" style="font-size:0.95rem;color:#555;">If you find this work useful, please cite:</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyBib()">Copy</button>
+    </div>
+    <pre id="bibbox">@misc{tu2026bls,
+      title={Task Inference Beyond Least Squares in Behavioral Foundation Models},
+      author={Kuan-Hsun Tu and Chien-Sheng Chiang and Hsin-Wei Chen and Tsung-Wei Ke},
+      year={2026},
+}</pre>
+  </div>
+</div>
+
+-->
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <p>
+        Website template adapted from
+        <a href="https://nerfies.github.io" target="_blank">Nerfies</a>
+        and inspired by <a href="https://seohong.me/projects/fql/" target="_blank">FQL</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<script>
+  const scrollBtn = document.getElementById('scrollToTop');
+  window.addEventListener('scroll', () => {
+    scrollBtn.classList.toggle('visible', window.scrollY > 300);
+  });
+  scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  function copyBib() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(document.getElementById('bibbox').innerText).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

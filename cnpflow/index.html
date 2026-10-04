@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learning Conditional Source Distribution via Flow Reversal for Temporal Flow Matching</title>
+  <meta name="description" content="CNP-Flow learns condition-dependent source distributions for flow matching through flow reversal, unifying video prediction, video interpolation, and robot motion planning with better quality and fewer function evaluations.">
+  <meta name="keywords" content="flow matching, conditional noise predictor, source distribution, flow reversal, video prediction, video interpolation, motion planning, temporal generation">
+  <meta name="author" content="Kuan-Hsun Tu, Hsuan-Chi Liu, Jia-Wei Liao, Chien-Sheng Chiang, Cheng-Fu Chou, Tsung-Wei Ke">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Learning Conditional Source Distribution via Flow Reversal for Temporal Flow Matching">
+  <meta property="og:description" content="A conditional noise predictor supplies per-condition Gaussian sources to flow matching, improving temporal generation across video and robotics.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dexman/static/css/bulma.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/index.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+  <style>
+    /* ── Fonts ── */
+    body, p, li, .hero, .section,
+    .title, .subtitle, h1, h2, h3, h4, h5, h6,
+    .body-text, .publication-title {
+      font-family: 'Libre Baskerville', Georgia, serif !important;
+    }
+    .sans, .publication-authors, .publication-affiliations,
+    .publication-links, .eql-cntrb, .fig-cap, .table-caption,
+    button, pre, code {
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+    }
+
+    /* ── Header ── */
+    .publication-header .hero-body { padding: 5rem 1.5rem 3.5rem; }
+
+    .publication-title {
+      font-size: clamp(1.9rem, 4vw, 2.5rem) !important;
+      line-height: 1.15 !important;
+      margin-bottom: 0.7rem !important;
+      color: #111 !important;
+    }
+    .publication-venue {
+      background: none !important; border: none !important; padding: 0 !important;
+      color: #555 !important; font-size: 1.3rem !important; font-weight: 600 !important;
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+      display: block; margin: 0.35rem auto 1.2rem !important;
+    }
+    .publication-authors {
+      color: #2563eb !important; font-size: 1.2rem !important;
+      font-weight: 400 !important; gap: 1.6rem !important; margin-top: 0 !important;
+    }
+    .publication-authors a { color: #2563eb !important; }
+    .publication-authors .author-block::after { content: '' !important; }
+    .publication-affiliations {
+      font-size: 1.1rem !important; color: #555 !important;
+      margin-top: 0.35rem !important; gap: 0 !important;
+    }
+    .publication-affiliations .affiliation-block::after { content: '' !important; }
+    .eql-cntrb {
+      font-size: 0.95rem !important; color: #888 !important; margin-top: 0.25rem !important;
+    }
+    .publication-links { margin-top: 1.2rem !important; gap: 0 !important; }
+    .publication-links .external-link.button {
+      background: none !important; border: none !important; box-shadow: none !important;
+      color: #2563eb !important; font-family: 'Source Sans 3', Arial, sans-serif !important;
+      font-size: 1.15rem !important; font-weight: 600 !important; padding: 0.25rem 1rem !important;
+      text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #93c5fd;
+    }
+    .publication-links .external-link.button:hover {
+      background: none !important; color: #1d4ed8 !important; transform: none !important;
+    }
+    .publication-links .external-link.button .icon { display: none !important; }
+    .publication-links .external-link.button.no-link {
+      color: #111 !important; text-decoration: none !important;
+      cursor: default !important; pointer-events: none !important;
+    }
+
+    /* ── Layout ── */
+    .content-section { padding: 3rem 1.5rem; }
+    .content-section.shaded {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .content-section.white {
+      background: #ffffff;
+    }
+    .content-block { max-width: 780px; margin: 0 auto; }
+    .content-block-wide { max-width: 960px; margin: 0 auto; }
+
+    .section-heading {
+      font-size: 1.65rem; font-weight: 700; color: #111;
+      margin-bottom: 1.4rem; padding-bottom: 0.55rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* ── Body text ── */
+    .body-text {
+      font-size: 1.1rem;
+      line-height: 1.85;
+      color: #111;
+    }
+    .body-text p { margin-bottom: 1rem; }
+
+    /* ── Math ── */
+    .math-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      margin: 1.2rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* ── Theorem ── */
+    .theorem-box {
+      border-left: 4px solid #2563eb;
+      background: #f8fafc;
+      padding: 1rem 1.4rem;
+      margin: 1.2rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .theorem-box .thm-title { font-weight: 700; color: #111; margin-bottom: 0.4rem; }
+
+    /* ── Figures ── */
+    .fig-wrap { margin: 1.5rem 0; }
+    .fig-wrap img {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      display: block;
+    }
+    .fig-cap {
+      font-size: 0.92rem;
+      color: #444;
+      line-height: 1.6;
+      margin-top: 0.6rem;
+    }
+    .fig-cap strong { color: #111; }
+
+    /* ── Results tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.1rem;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      color: #111;
+      font-variant-numeric: tabular-nums;
+    }
+    .results-table thead tr:first-child th { border-top: 2px solid #111; }
+    .results-table thead tr:last-child { border-bottom: 1.5px solid #555; }
+    .results-table tbody { border-bottom: 2px solid #111; }
+    .results-table th {
+      font-weight: 700;
+      padding: 0.45rem 1rem;
+      text-align: center !important;
+      background: none;
+      white-space: nowrap;
+      color: #111;
+    }
+    .results-table th:first-child { text-align: left !important; }
+    .results-table td {
+      padding: 0.35rem 1rem;
+      text-align: center;
+      color: #111;
+      border: none;
+      white-space: nowrap;
+    }
+    .results-table td:first-child { text-align: left; }
+    .results-table td.method { text-align: left; }
+    .results-table .sep td { border-top: 1px solid #ccc; }
+    .results-table .group-row td {
+      font-weight: 600;
+      padding-top: 0.6rem;
+      padding-bottom: 0.1rem;
+      color: #333;
+      font-size: 1.05rem;
+    }
+    .results-table .ours td {
+      font-weight: 700;
+      color: #111;
+      background: #fefce8;
+    }
+    .results-table .indent td:first-child { padding-left: 2rem; }
+    .results-table u { text-decoration: underline; text-underline-offset: 2px; }
+
+    /* ── BibTeX ── */
+    pre {
+      background: #f8fafc !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important; padding: 1.2rem 1.4rem !important;
+      font-size: 0.88rem !important; overflow-x: auto;
+      font-family: 'SF Mono', 'Monaco', monospace !important;
+    }
+    .copy-btn {
+      background: #2563eb; color: white; border: none;
+      border-radius: 5px; padding: 0.4rem 0.9rem;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #1d4ed8; }
+    .copy-btn.ok { background: #10b981; }
+
+    /* ── Scroll to top ── */
+    .scroll-to-top {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 44px; height: 44px;
+      background: #2563eb; color: white; border: none; border-radius: 50%;
+      cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .scroll-to-top.visible { opacity: 1; visibility: visible; }
+    .scroll-to-top:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+    hr.divider { border: none; border-top: 1px solid #e2e8f0; margin: 0; }
+    .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 2.5rem 1.5rem; }
+    .footer .content { color: #64748b; font-size: 0.9rem; font-family: 'Source Sans 3', Arial, sans-serif !important; }
+    .footer a { color: #2563eb; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<section class="hero publication-header">
+  <div class="hero-body">
+    <div class="container is-max-desktop has-text-centered">
+      <h1 class="publication-title">Learning Conditional Source Distribution<br>via Flow Reversal for Temporal Flow Matching</h1>
+      <div class="publication-venue">Under Review</div>
+      <div class="publication-authors">
+        <span class="author-block"><a href="https://syun413.github.io/" target="_blank">Kuan-Hsun Tu</a><sup>*</sup></span>
+        <span class="author-block">Hsuan-Chi Liu<sup>†*</sup></span>
+        <span class="author-block"><a href="https://jwliao1209.github.io/" target="_blank">Jia-Wei Liao</a><sup>*</sup></span>
+        <span class="author-block">Chien-Sheng Chiang</span>
+        <span class="author-block"><a href="https://www.csie.ntu.edu.tw/~ccf/" target="_blank">Cheng-Fu Chou</a></span>
+        <span class="author-block"><a href="https://twke18.github.io/" target="_blank">Tsung-Wei Ke</a></span>
+      </div>
+      <div class="publication-affiliations">
+        <span class="affiliation-block">National Taiwan University</span>
+      </div>
+      <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;&nbsp; † Corresponding author</p>
+      <div class="publication-links" style="margin-top:1.25rem;">
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>ArXiv</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>Paper</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a class="external-link button is-dark no-link">
+            <span>Code</span>
+          </a>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TEASER ========== -->
+<section class="hero teaser" style="padding-bottom:0;">
+  <div class="hero-body" style="padding-bottom:2rem;">
+    <div class="container is-max-desktop">
+      <div class="teaser-figure">
+        <img src="figures/teaser.png" alt="CNP-Flow teaser" class="teaser-media">
+      </div>
+      <p class="fig-cap sans" style="margin-top:1rem;">
+        <strong>CNP-Flow learns condition-dependent source distributions for temporal generation.</strong>
+        A Conditional Noise Predictor (CNP) predicts a source distribution for each temporal condition
+        instead of always starting from a standard Gaussian. This source-side conditioning reduces FVD by
+        up to 75% over RIVER on video prediction, and yields more precise motion-planning trajectories
+        with fewer collisions.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ========== PROBLEM ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Problem: Conditioning Only Through the Vector Field</h2>
+
+    <div class="body-text">
+      <p>
+        Conditional FM trains a network \(\boldsymbol{v}_\theta\) to regress a vector field that transports a
+        source sample \(\boldsymbol{x}_0 \sim p_0\) to a target \(\boldsymbol{x}_1 \sim p_1(\cdot \mid \mathcal{C})\),
+        with the condition \(\mathcal{C}\) injected as an extra input:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        \mathcal{L}_{\mathrm{FM}}(\theta) =
+        \mathbb{E}_{\mathcal{C},\, \boldsymbol{x}_0 \sim p_0,\, \boldsymbol{x}_1 \sim p_1(\cdot \mid \mathcal{C}),\, t}
+        \left[\big\|\boldsymbol{v}_\theta(\boldsymbol{x}_t, t \mid \mathcal{C}) - (\boldsymbol{x}_1 - \boldsymbol{x}_0)\big\|_2^2\right],
+        \qquad \boldsymbol{x}_t = (1-t)\boldsymbol{x}_0 + t\boldsymbol{x}_1
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        At inference, the generated sample is obtained by integrating from a source sample:
+      </p>
+    </div>
+    <div class="math-block">
+      \[
+        \hat{\boldsymbol{x}}_1 := \boldsymbol{x}_0 + \int_0^1 \boldsymbol{v}_\theta(\boldsymbol{x}_t, t \mid \mathcal{C})\,\mathrm{d}t
+      \]
+    </div>
+    <div class="body-text">
+      <p>
+        The output depends on <em>both</em> the condition \(\mathcal{C}\) and the source sample
+        \(\boldsymbol{x}_0\). Standard FM spends all of its conditioning budget on the vector field and leaves
+        \(\boldsymbol{x}_0\) as a condition-agnostic standard Gaussian. In temporal generation, source samples for
+        neighboring temporal conditions can then be widely separated, and the generated sequence drifts
+        from the target trajectory.
+      </p>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="figures/toy_example.png" alt="2D toy example of temporal generation">
+    </div>
+    <p class="fig-cap sans">
+      <strong>2D toy example of temporal generation.</strong> Colors indicate temporal phase along the target
+      circular trajectory. (a) Vanilla FM draws source samples from a standard Gaussian; samples for
+      neighboring temporal conditions can be far apart and the generated sequence deviates from the
+      target. (b) CNP-Flow learns a conditional source with a smoother arrangement of samples by temporal
+      phase (see the zoomed region), and the generated sequence follows the target trajectory closely.
+    </p>
+  </div>
+</div>
+
+<!-- ========== METHOD ========== -->
+<div class="content-section">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">
+      Our Solution: Learn the Source, Keep the Backbone
+    </h2>
+
+    <div class="fig-wrap">
+      <img src="figures/method.png" alt="CNP-Flow three-stage training pipeline">
+    </div>
+    <p class="fig-cap sans" style="max-width:780px;margin-left:auto;margin-right:auto;">
+      <strong>Three-stage training pipeline.</strong> Stage 1: a pretrained FM provides flow-reversal-induced
+      source samples that are clustered by temporal condition. Stage 2: the CNP learns to predict a
+      conditional Gaussian prior for these samples via NLL and KL objectives. Stage 3: the FM is
+      fine-tuned with source samples drawn from the learned prior, yielding more coherent and
+      target-aligned transport.
+    </p>
+
+    <div class="content-block" style="margin-top:2rem;">
+      <div class="body-text">
+        <p>
+          CNP-Flow adds a <strong>conditional noise predictor</strong> that maps a temporal condition
+          \(\mathcal{C}_\mathcal{T}\) to an isotropic Gaussian source distribution:
+        </p>
+      </div>
+      <div class="math-block">
+        \[
+          p_\phi(\boldsymbol{x}_0 \mid \mathcal{C}_\mathcal{T}) :=
+          \mathcal{N}\!\left(\boldsymbol{x}_0;\; \boldsymbol{\mu}_\phi(\mathcal{C}_\mathcal{T}),\; \sigma^2_\phi(\mathcal{C}_\mathcal{T})\,\mathbf{I}\right)
+        \]
+      </div>
+
+      <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">Stage 1: Pretrain the FM, then reverse it</h3>
+      <div class="body-text">
+        <p>
+          The FM is pretrained in the standard way with a \(\mathcal{N}(\mathbf{0}, \mathbf{I})\) source.
+          Because the learned ODE flow is continuous, <strong>flow reversal</strong> maps nearby targets to
+          nearby regions of source space. For each target \(\boldsymbol{x}_1 \sim p_1(\cdot \mid \mathcal{C}_\mathcal{T})\)
+          we retrieve its source sample by integrating backward:
+        </p>
+      </div>
+      <div class="math-block">
+        \[
+          \tilde{\boldsymbol{x}}_0 = \tilde{\Phi}_{\theta, 1 \to 0}(\boldsymbol{x}_1 \mid \mathcal{C}_\mathcal{T})
+          := \boldsymbol{x}_1 - \int_0^1 \boldsymbol{v}_\theta(\boldsymbol{x}_\tau, \tau \mid \mathcal{C}_\mathcal{T})\,\mathrm{d}\tau
+        \]
+      </div>
+      <div class="body-text">
+        <p>
+          This induces a per-condition source distribution \(\tilde{p}_0(\cdot \mid \mathcal{C}_\mathcal{T})\)
+          that is clustered by temporal condition rather than spread as a standard Gaussian. It serves as
+          the supervision signal for the CNP, sidestepping the intractable search for an optimal source.
+        </p>
+      </div>
+
+      <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">Stage 2: Train the CNP</h3>
+      <div class="body-text">
+        <p>
+          The CNP is trained to maximize the likelihood of the retrieved source samples, with a KL term
+          that keeps the predicted distribution anchored to the standard Gaussian prior:
+        </p>
+      </div>
+      <div class="math-block">
+        \[
+          \mathcal{L}_{\mathrm{CNP}}(\phi) =
+          \underbrace{-\,\mathbb{E}_{\mathcal{C}_\mathcal{T},\, \tilde{\boldsymbol{x}}_0 \sim \tilde{p}_0(\cdot \mid \mathcal{C}_\mathcal{T})}
+          \big[\log p_\phi(\tilde{\boldsymbol{x}}_0 \mid \mathcal{C}_\mathcal{T})\big]}_{\mathcal{L}_{\mathrm{NLL}}}
+          \;+\; \lambda\,
+          \underbrace{\mathcal{D}_{\mathrm{KL}}\!\big(p_\phi(\cdot \mid \mathcal{C}_\mathcal{T}) \,\|\, \mathcal{N}(\mathbf{0}, \mathbf{I})\big)}_{\mathcal{L}_{\mathrm{KL}}}
+        \]
+      </div>
+
+      <div class="theorem-box">
+        <div class="thm-title sans">Proposition (Population minimizer of the NLL objective)</div>
+        <div class="body-text" style="font-size:1.02rem;">
+          <p style="margin-bottom:0.5rem;">
+            Over the isotropic Gaussian family, the minimizer of \(\mathcal{L}_{\mathrm{NLL}}\) has
+          </p>
+          <div class="math-block" style="margin:0.6rem 0;">
+            \[
+              \tilde{\boldsymbol{\mu}}_0(\mathcal{C}_\mathcal{T}) = \mathbb{E}_{\boldsymbol{x}_1}\big[\tilde{\Phi}_{\theta,1\to0}(\boldsymbol{x}_1 \mid \mathcal{C}_\mathcal{T})\big],
+              \qquad
+              \tilde{\sigma}_0^2(\mathcal{C}_\mathcal{T}) = \tfrac{1}{d}\,\mathbb{E}_{\boldsymbol{x}_1}
+              \big\|\tilde{\Phi}_{\theta,1\to0}(\boldsymbol{x}_1 \mid \mathcal{C}_\mathcal{T}) - \tilde{\boldsymbol{\mu}}_0\big\|_2^2
+            \]
+          </div>
+          <p style="margin-bottom:0;">
+            The CNP's optimal mean and variance coincide with the mean and scaled second central moment of
+            the flow-reversal-induced source distribution.
+          </p>
+        </div>
+      </div>
+
+      <div class="theorem-box">
+        <div class="thm-title sans">Theorem (Conditional source locality, informal)</div>
+        <div class="body-text" style="font-size:1.02rem;">
+          <p style="margin-bottom:0.5rem;">
+            If the predicted mean \(\boldsymbol{\mu}^*_\phi(\cdot)\) is \(L_\mu\)-Lipschitz in the temporal
+            condition, then for two conditions \(\mathcal{C}_\mathcal{T}, \mathcal{C}'_\mathcal{T}\),
+            independently drawn CNP source samples satisfy with high probability
+          </p>
+          <div class="math-block" style="margin:0.6rem 0;">
+            \[
+              \|\boldsymbol{x}_0 - \boldsymbol{x}'_0\|_2 \le L_\mu \|\mathcal{C}_\mathcal{T} - \mathcal{C}'_\mathcal{T}\|_2
+              + \mathcal{O}\!\left(\sqrt{d\big(\sigma^{*2}_\phi(\mathcal{C}_\mathcal{T}) + \sigma^{*2}_\phi(\mathcal{C}'_\mathcal{T})\big)}\right)
+            \]
+          </div>
+          <p style="margin-bottom:0;">
+            Nearby temporal conditions yield nearby source centers; the predicted variances control the
+            stochastic dispersion around them.
+          </p>
+        </div>
+      </div>
+
+      <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">Stage 3: Fine-tune the FM with the learned source</h3>
+      <div class="body-text">
+        <p>
+          Finally, the FM is fine-tuned with the same objective as Stage 1, but with source samples drawn
+          from the CNP instead of the standard Gaussian:
+        </p>
+      </div>
+      <div class="math-block">
+        \[
+          \mathcal{L}_{\mathrm{FT\text{-}FM}}(\theta) =
+          \mathbb{E}_{\mathcal{C}_\mathcal{T},\, \boldsymbol{x}_0 \sim p_\phi(\cdot \mid \mathcal{C}_\mathcal{T}),\, \boldsymbol{x}_1 \sim p_1(\cdot \mid \mathcal{C}_\mathcal{T}),\, t}
+          \left[\big\|\boldsymbol{v}_\theta(\boldsymbol{x}_t, t \mid \mathcal{C}_\mathcal{T}) - (\boldsymbol{x}_1 - \boldsymbol{x}_0)\big\|_2^2\right]
+        \]
+      </div>
+      <div class="body-text">
+        <p>
+          At inference, draw \(\boldsymbol{x}_0 \sim p_\phi(\cdot \mid \mathcal{C}_\mathcal{T})\) and integrate
+          the vector field as usual. CNP-Flow only modulates the source supplied to the FM; the backbone
+          architecture is untouched, so it drops into existing conditional FM frameworks.
+        </p>
+      </div>
+
+      <h3 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1rem;color:#111;">One formulation, three temporal tasks</h3>
+      <div class="body-text">
+        <p>
+          The tasks differ only in how the temporal condition is constructed:
+        </p>
+        <ul style="margin-left:1.4rem;">
+          <li style="margin-bottom:0.5rem;"><strong>Video prediction</strong> (extrapolation): at step \(i\), the previous frame
+            is the reference and a context frame \(\boldsymbol{x}^c\) is sampled from earlier observations,
+            \(\mathcal{C}^i_\mathcal{T} = (\boldsymbol{x}^{i-1}, \boldsymbol{x}^c, i-c)\).</li>
+          <li style="margin-bottom:0.5rem;"><strong>Video interpolation</strong>: the previous frame is the reference and
+            the final frame \(\boldsymbol{x}^N\) is a fixed future context,
+            \(\mathcal{C}^i_\mathcal{T} = (\boldsymbol{x}^{i-1}, \boldsymbol{x}^N, N-i)\).</li>
+          <li><strong>Motion planning</strong>: the whole joint-space trajectory is generated at once
+            from the initial state and target end-effector pose,
+            \(\mathcal{C}_\mathcal{T} = (\boldsymbol{x}^0, \boldsymbol{x}^N)\).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== RESULTS ========== -->
+<div class="content-section white">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">Results</h2>
+
+    <!-- Video -->
+    <div class="content-block" style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">Same Backbone, Only the Source Changes</h3>
+      <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;">
+        RIVER is the flow matching backbone with a standard Gaussian source. CNP-Flow keeps that backbone
+        and swaps in the learned conditional source. \(p \rightarrow k\): \(p\) observed frames generate
+        \(k\) future frames; \(2 \rightarrow 14\) interpolation fills 14 frames between two endpoints.
+        CNP-Flow results are averaged over three seeds.
+      </p>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr><th>Setting</th><th>Method</th><th>PSNR ↑</th><th>SSIM ↑</th><th>FVD ↓</th></tr>
+          </thead>
+          <tbody>
+            <tr class="group-row"><td colspan="5">Video prediction</td></tr>
+            <tr class="indent"><td>BAIR64, 1 → 15</td><td>RIVER</td><td>—</td><td>—</td><td>73.50</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td>20.15</td><td>0.839</td><td><strong>61.17</strong></td></tr>
+            <tr class="indent sep"><td>KTH, 10 → 30</td><td>RIVER</td><td>30.40</td><td>0.860</td><td>180.00</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td><strong>34.25</strong></td><td><strong>0.943</strong></td><td><strong>44.76</strong></td></tr>
+            <tr class="indent sep"><td>KTH, 10 → 40</td><td>RIVER</td><td>29.00</td><td>0.820</td><td>170.50</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td><strong>32.69</strong></td><td><strong>0.930</strong></td><td><strong>54.88</strong></td></tr>
+            <tr class="indent sep"><td>CLEVRER, 2 → 14</td><td>RIVER</td><td>—</td><td>—</td><td>48.96</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td>42.23</td><td>0.994</td><td><strong>24.18</strong></td></tr>
+            <tr class="group-row sep"><td colspan="5">Video interpolation</td></tr>
+            <tr class="indent"><td>KTH, 2 → 14</td><td>RIVER</td><td>35.65</td><td>0.9627</td><td>38.28</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td><strong>36.07</strong></td><td><strong>0.9634</strong></td><td><strong>36.81</strong></td></tr>
+            <tr class="indent sep"><td>CLEVRER, 2 → 14</td><td>RIVER</td><td>43.79</td><td>0.9949</td><td>16.01</td></tr>
+            <tr class="indent ours"><td></td><td>CNP-Flow</td><td><strong>45.68</strong></td><td><strong>0.9954</strong></td><td><strong>10.77</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="body-text" style="font-size:1rem;color:#555;margin-top:0.5rem;">
+        The largest gains are in prediction, where the model has to extrapolate and a good starting point
+        matters most. Interpolation gains are smaller because the two endpoints already pin the rollout down.
+      </p>
+    </div>
+
+    <!-- Motion planning -->
+    <div class="content-block" style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.6rem;color:#111;">The Same Idea Transfers from Pixels to Robot Trajectories</h3>
+      <p class="body-text" style="font-size:1rem;color:#555;margin-bottom:1rem;">
+        7-DoF Franka Panda motion planning, 15 sampling steps for all methods, averaged over three seeds.
+        Replacing the diffusion planner (MPD) with a flow model of similar size changes nothing outside
+        noise, so the generator family is not what matters. Adding the learned source to that same flow
+        model is what raises the fraction of valid trajectories, halves both end-effector errors, and cuts
+        collisions by about 40%.
+      </p>
+      <div class="table-wrap">
+        <table class="results-table" style="font-size:0.98rem;">
+          <thead>
+            <tr><th>Method</th><th>Valid (%) ↑</th><th>EE pos (cm) ↓</th><th>EE ori (°) ↓</th><th>Collision ↓</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>MPD (diffusion)</td><td>86.6</td><td>1.9</td><td>1.2</td><td>0.0030</td></tr>
+            <tr><td>Fixed-source FM</td><td>84.9</td><td>1.6</td><td>1.1</td><td>0.0038</td></tr>
+            <tr class="ours"><td>CNP-Flow (Ours)</td><td><strong>88.5</strong></td><td><strong>0.8</strong></td><td><strong>0.5</strong></td><td><strong>0.0023</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Qualitative -->
+    <div class="content-block-wide" style="margin-bottom:3.5rem;">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;max-width:780px;margin-left:auto;margin-right:auto;">What the Learned Source Fixes</h3>
+      <div class="fig-wrap">
+        <img src="figures/qualitative.png" alt="Qualitative comparison on CLEVRER and Franka Panda">
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin-left:auto;margin-right:auto;">
+        <strong>Left:</strong> CLEVRER interpolation. With a fixed source the objects drift at the highlighted
+        frames (colors fade, boundaries blur, a ghost duplicate appears), while CNP-Flow keeps object
+        identity and tracks the ground truth. <strong>Right:</strong> Franka Panda planning, 50 sampled
+        trajectories per panel (red: colliding, green: collision-free). CNP-Flow produces a dense bundle of
+        valid plans where MPD and fixed-source FM mostly collide. Both failures come from the same cause:
+        a starting point that ignores the condition.
+      </p>
+    </div>
+
+    <!-- Efficiency -->
+    <div class="content-block">
+      <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.2rem;color:#111;">A Better Start Needs Fewer Steps</h3>
+      <div class="fig-wrap">
+        <img src="figures/efficiency_chart.png" alt="Inference efficiency on KTH prediction">
+      </div>
+      <p class="fig-cap sans">
+        KTH prediction, quality vs. number of function evaluations (NFE). Because the predicted source already
+        sits near the data manifold, the ODE no longer has to cross the gap from a standard Gaussian; every
+        step is local refinement. The standard Gaussian baseline plateaus at PSNR ≈ 26.5 from NFE = 10 onward.
+        CNP-Flow passes that plateau at NFE = 5 and keeps rising to ≈ 28.2 by NFE = 10. Five steps of CNP-Flow
+        beat fifty steps of the baseline.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!--
+<hr class="divider">
+
+========== BIBTEX ==========
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">BibTeX</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+      <span class="sans" style="font-size:0.95rem;color:#555;">If you find this work useful, please cite:</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyBib()">Copy</button>
+    </div>
+    <pre id="bibbox">@misc{tu2026cnpflow,
+      title={Learning Conditional Source Distribution via Flow Reversal for Temporal Flow Matching},
+      author={Kuan-Hsun Tu and Hsuan-Chi Liu and Jia-Wei Liao and Chien-Sheng Chiang and Cheng-Fu Chou and Tsung-Wei Ke},
+      year={2026},
+}</pre>
+  </div>
+</div>
+
+-->
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <p>
+        Website template adapted from
+        <a href="https://nerfies.github.io" target="_blank">Nerfies</a>
+        and inspired by <a href="https://seohong.me/projects/fql/" target="_blank">FQL</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<script>
+  const scrollBtn = document.getElementById('scrollToTop');
+  window.addEventListener('scroll', () => {
+    scrollBtn.classList.toggle('visible', window.scrollY > 300);
+  });
+  scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  function copyBib() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(document.getElementById('bibbox').innerText).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
