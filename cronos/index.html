@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRONOS: Benchmarking Non-Episodic Reinforcement Learning for Robotic Manipulation</title>
+  <meta name="description" content="CRONOS is a simulation benchmark for RL fine-tuning of vision-language-action models under non-episodic scene resets.">
+  <meta name="keywords" content="non-episodic reinforcement learning, multi-task RL, RL fine-tuning, vision-language-action models, robotic manipulation, benchmark, OpenVLA, SpatialVLA, simulation, NTU">
+  <meta name="author" content="Po-Yi Wu, Djengo Cyun-Jyun Fang, Dian Cheng, Tsung-Wei Ke">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="CRONOS: Benchmarking Non-Episodic Reinforcement Learning for Robotic Manipulation">
+  <meta property="og:description" content="CRONOS is a simulation benchmark for RL fine-tuning of vision-language-action models under non-episodic scene resets.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dexman/static/css/bulma.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="../dexman/static/css/index.css">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+  <style>
+    /* ── Fonts ── */
+    body, p, li, .hero, .section,
+    .title, .subtitle, h1, h2, h3, h4, h5, h6,
+    .body-text, .publication-title {
+      font-family: 'Libre Baskerville', Georgia, serif !important;
+    }
+    .sans, .publication-authors, .publication-affiliations,
+    .publication-links, .eql-cntrb, .fig-cap, .table-caption,
+    button, pre, code {
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+    }
+
+    /* ── Header ── */
+    .publication-header .hero-body { padding: 5rem 1.5rem 3.5rem; }
+
+    .publication-title {
+      font-size: clamp(2.0rem, 4.5vw, 2.9rem) !important;
+      line-height: 1.15 !important;
+      margin-bottom: 0.7rem !important;
+      color: #111 !important;
+    }
+    .publication-venue {
+      background: none !important; border: none !important; padding: 0 !important;
+      color: #555 !important; font-size: 1.3rem !important; font-weight: 600 !important;
+      font-family: 'Source Sans 3', Arial, sans-serif !important;
+      display: block; margin: 0.35rem auto 1.2rem !important;
+    }
+    .publication-authors {
+      color: #2563eb !important; font-size: 1.2rem !important;
+      font-weight: 400 !important; gap: 1.6rem !important; margin-top: 0 !important;
+    }
+    .publication-authors a { color: #2563eb !important; }
+    .publication-authors .author-block::after { content: '' !important; }
+    .publication-affiliations {
+      font-size: 1.1rem !important; color: #555 !important;
+      margin-top: 0.35rem !important; gap: 0 !important;
+    }
+    .publication-affiliations .affiliation-block::after { content: '' !important; }
+    .eql-cntrb {
+      font-size: 0.95rem !important; color: #888 !important; margin-top: 0.25rem !important;
+    }
+    .publication-links { margin-top: 1.2rem !important; gap: 0 !important; }
+    .publication-links .external-link.button {
+      background: none !important; border: none !important; box-shadow: none !important;
+      color: #2563eb !important; font-family: 'Source Sans 3', Arial, sans-serif !important;
+      font-size: 1.15rem !important; font-weight: 600 !important; padding: 0.25rem 1rem !important;
+      text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #93c5fd;
+    }
+    .publication-links .external-link.button:hover {
+      background: none !important; color: #1d4ed8 !important; transform: none !important;
+    }
+    .publication-links .external-link.button .icon { display: none !important; }
+    .publication-links .external-link.button.no-link {
+      color: #111 !important; text-decoration: none !important;
+      cursor: default !important; pointer-events: none !important;
+    }
+
+    /* ── Layout ── */
+    .content-section { padding: 3rem 1.5rem; }
+    .content-section.shaded {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .content-section.white { background: #ffffff; }
+    .content-block { max-width: 780px; margin: 0 auto; }
+    .content-block-wide { max-width: 960px; margin: 0 auto; }
+
+    .section-heading {
+      font-size: 1.65rem; font-weight: 700; color: #111;
+      margin-bottom: 1.4rem; padding-bottom: 0.55rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* ── Body text ── */
+    .body-text { font-size: 1.1rem; line-height: 1.85; color: #111; }
+    .body-text p { margin-bottom: 1rem; }
+
+    /* ── Results layout ── */
+    .sub-heading { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.8rem; color: #111; }
+    .result-block { margin-bottom: 3rem; }
+    .result-label { font-size: 1rem; font-weight: 600; color: #333; margin: 2rem 0 0.6rem; }
+    .fig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; align-items: start; }
+    .fig-grid.three { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .fig-grid img, .fig-single { width: 100%; display: block; }
+    .fig-narrow { max-width: 560px; margin: 0 auto; }
+    .strategy-list { font-size: 0.98rem; color: #444; line-height: 1.7; padding-left: 1.2rem; list-style-type: disc; margin-bottom: 1rem; }
+
+    /* ── Videos ── */
+    .video-grid {
+      max-width: 780px; margin: 1.5rem auto; display: grid; gap: 0.8rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .scene-video { width: 100%; display: block; border-radius: 6px; border: 1px solid #e2e8f0; }
+    .video-single { max-width: 480px; margin: 0 auto 0.6rem; }
+    .video-cap { margin-top: 0.35rem; text-align: center; }
+
+    /* ── Math ── */
+    .math-block {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 1rem 1.5rem; margin: 1.2rem 0; overflow-x: auto; text-align: center;
+    }
+
+    /* ── Figures ── */
+    .fig-wrap { margin: 1.5rem 0; }
+    .fig-wrap img {
+      width: 100%; border-radius: 6px; border: 1px solid #e2e8f0; display: block;
+    }
+    .fig-cap {
+      font-size: 0.92rem; color: #444; line-height: 1.6; margin-top: 0.6rem;
+    }
+    .fig-cap strong { color: #111; }
+
+    /* ── Avoid short last lines ── */
+    .body-text p, .fig-cap, .finding-list li > span:last-child, .content-section ul.sans li { text-wrap: pretty; }
+    .video-cap, .fig-cap[style*="text-align:center"] { text-wrap: balance; }
+    @media (min-width: 480px) { .keep-together { white-space: nowrap; } }
+
+    /* ── Findings ── */
+    .finding-list { list-style: none; padding: 0; margin: 1rem 0; }
+    .finding-list li {
+      display: flex; gap: 0.85rem; align-items: flex-start;
+      padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0; font-size: 1.05rem; line-height: 1.7;
+    }
+    .finding-list li:last-child { border-bottom: none; }
+    .finding-num {
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      font-size: 0.8rem; font-weight: 700; color: #2563eb;
+      background: #eff6ff; border-radius: 4px; padding: 0.15rem 0.45rem;
+      white-space: nowrap; margin-top: 0.2rem; flex-shrink: 0;
+    }
+
+    /* ── Results tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    .results-table {
+      width: 100%; border-collapse: collapse; font-size: 1.05rem;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      color: #111; font-variant-numeric: tabular-nums;
+    }
+    .results-table thead tr:first-child th { border-top: 2px solid #111; }
+    .results-table thead tr:last-child { border-bottom: 1.5px solid #555; }
+    .results-table tbody { border-bottom: 2px solid #111; }
+    .results-table th {
+      font-weight: 700; padding: 0.45rem 0.9rem; text-align: center;
+      background: none; white-space: nowrap; color: #111;
+    }
+    .results-table th:first-child { text-align: left; }
+    .results-table th.cmidrule { border-bottom: 1px solid #555; }
+    .results-table th.no-cmidrule { border-bottom: none; }
+    .results-table td { padding: 0.35rem 0.9rem; text-align: center; color: #111; border: none; }
+    .results-table td:first-child { text-align: left; }
+    .results-table .sep td { border-top: 1px solid #ccc; }
+    .results-table td strong { font-weight: 700 !important; color: #111; background: #fefce8; padding: 0.1rem 0.35rem; border-radius: 3px; }
+    .results-table .group-row td {
+      font-weight: 600; padding-top: 0.6rem; padding-bottom: 0.1rem;
+      color: #333; font-size: 0.95rem;
+    }
+    .results-table .ours td { font-weight: 700; color: #111; background: #fefce8; }
+    .results-table .indent td:first-child { padding-left: 2rem; }
+    .check { color: #10b981; font-weight: 700; }
+    .dash { color: #999; }
+
+    /* ── BibTeX ── */
+    pre {
+      background: #f8fafc !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important; padding: 1.2rem 1.4rem !important;
+      font-size: 0.88rem !important; overflow-x: auto;
+      font-family: 'SF Mono', 'Monaco', monospace !important;
+    }
+    .copy-btn {
+      background: #2563eb; color: white; border: none;
+      border-radius: 5px; padding: 0.4rem 0.9rem;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: 'Source Sans 3', Arial, sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #1d4ed8; }
+    .copy-btn.ok { background: #10b981; }
+
+    /* ── Scroll to top ── */
+    .scroll-to-top {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 44px; height: 44px;
+      background: #2563eb; color: white; border: none; border-radius: 50%;
+      cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .scroll-to-top.visible { opacity: 1; visibility: visible; }
+    .scroll-to-top:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+    hr.divider { border: none; border-top: 1px solid #e2e8f0; margin: 0; }
+    .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 2.5rem 1.5rem; }
+    .footer .content { color: #64748b; font-size: 0.9rem; font-family: 'Source Sans 3', Arial, sans-serif !important; }
+    .footer a { color: #2563eb; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<section class="hero publication-header">
+  <div class="hero-body">
+    <div class="container is-max-desktop has-text-centered">
+      <h1 class="publication-title">CRONOS: Benchmarking Non-Episodic Reinforcement Learning<br>for Robotic Manipulation</h1>
+      <!-- TODO: replace <arXiv month> with the real month after the arXiv upload. -->
+      <div class="publication-venue">Preprint &middot; &lt;arXiv month&gt; 2026</div>
+      <div class="publication-authors">
+        <span class="author-block">Po-Yi Wu<sup>*</sup></span>
+        <span class="author-block">Djengo Cyun-Jyun Fang<sup>*†</sup></span>
+        <span class="author-block">Dian Cheng<sup>*</sup></span>
+        <span class="author-block"><a href="https://twke18.github.io/" target="_blank">Tsung-Wei Ke</a></span>
+      </div>
+      <div class="publication-affiliations">
+        <span class="affiliation-block">National Taiwan University</span>
+      </div>
+      <p class="eql-cntrb" style="margin-top:0.4rem;">* Equal contribution &nbsp;·&nbsp; † Corresponding author</p>
+      <div class="publication-links" style="margin-top:1.25rem;">
+        <!-- TODO: temporary links. For each one, set the real href, add target="_blank", and remove the no-link class. -->
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark no-link"><!-- TODO: arXiv link -->
+            <span>Arxiv</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark no-link"><!-- TODO: add the built paper as pdf/CRONOS.pdf, then link to it -->
+            <span>Paper</span>
+          </a>
+        </span>
+        <span class="link-block">
+          <a href="#" class="external-link button is-dark no-link"><!-- TODO: GitHub code link -->
+            <span>Code</span>
+          </a>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TEASER ========== -->
+<section class="hero teaser" style="padding-bottom:0;">
+  <div class="hero-body" style="padding-bottom:2rem;">
+    <div class="container is-max-desktop">
+      <div class="fig-wrap">
+        <img src="figures/teaser.png" alt="Overview of CRONOS: episodic and non-episodic training, diverse scenes, in-depth analysis, and evaluations on unseen task sequences and object positions">
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.6rem auto 0;text-align:center;">
+        <strong>Overview of non-episodic training in CRONOS.</strong> We introduce CRONOS, a benchmark for RL fine-tuning of VLAs under infrequent scene resets.
+        Tasks share a scene (top left). Episodic training resets the scene before every task, whereas non-episodic training continues each task from where the previous one ended.
+        CRONOS covers diverse scenes and objects (middle left). Without frequent resets, object positions become increasingly dispersed, and rollout success decays after each scene reset (bottom).
+        Yet policies fine-tuned non-episodically generalize better to unseen object positions and perform better on unseen task sequences (right).
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ========== ABSTRACT ========== -->
+<div class="content-section">
+  <div class="content-block">
+    <h2 class="section-heading">Abstract</h2>
+    <div class="body-text">
+      <p>
+        Reinforcement learning (RL) is promising for adapting robot policies to unstructured real-world
+        environments. However, standard RL pipelines rely on episodic training with frequent scene resets,
+        which is impractical for real-world deployment due to the need for substantial human intervention.
+        While prior work has studied non-episodic RL in relatively small policies trained from scratch, its
+        behavior when fine-tuning modern large-scale pre-trained vision-language-action (VLA) models remains
+        underexplored. In this work, we introduce <strong>CRONOS</strong>, a simulation benchmark for RL
+        fine-tuning of VLAs under non-episodic scene resets. CRONOS leverages high-fidelity physics simulators
+        and adopts shared-scene multi-task settings.
+      </p>
+      <p>
+        Using CRONOS, we show that naively fine-tuning pre-trained policies fails in non-episodic settings due
+        to shifts in object configurations and end-effector poses; however, these challenges can be mitigated
+        through targeted reset allocation and by addressing biases in pre-trained models. Moreover, we find
+        that non-episodic training enhances long-horizon manipulation and improves generalization to previously
+        unseen object configurations and task sequences.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== MOTIVATION ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">The Problem: Episodic Training Doesn't Scale</h2>
+    <div class="body-text">
+      <p>
+        Standard RL pipelines assume <em>episodic training</em>: scenes are reset frequently to keep robots
+        from being trapped in low-reward states. In simulation this is free, but in the real world it requires
+        human intervention and substantial overhead, which has prevented RL from being deployed at scale in
+        real robotic systems.
+      </p>
+      <p>
+        Non-episodic RL algorithms aim to remove this bottleneck, but they were proposed before the surge of
+        VLAs and are confined to the simpler setting of training policies from scratch.
+      </p>
+    </div>
+
+    <div class="video-grid">
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/episodic.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Episodic: the scene is reset before each task</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/non_episodic.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Non-episodic: each task continues from the last one</p>
+      </div>
+    </div>
+    <p class="fig-cap sans" style="max-width:780px;margin:0.2rem auto 0;text-align:center;">
+      The same four tasks in the same order. These are training rollouts from two different policies, trained with <em>T</em> = 80 (left) and <em>T</em> = 320 (right).
+    </p>
+
+    <div class="columns" style="margin-top:1.5rem;gap:1rem;align-items:stretch;">
+      <div class="column">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.2rem 1.5rem;height:100%;box-sizing:border-box;">
+          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;margin-bottom:0.5rem;">Episodic Multi-Task RL</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
+            <li>Scene is reset before every task</li>
+            <li>Frequent human intervention</li>
+            <li>Hard to deploy at scale on real robots</li>
+          </ul>
+        </div>
+      </div>
+      <div class="column">
+        <div style="background:#fff;border:2px solid #2563eb;border-radius:8px;padding:1.2rem 1.5rem;height:100%;box-sizing:border-box;">
+          <p class="sans" style="font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#2563eb;margin-bottom:0.5rem;">CRONOS: Non-Episodic Scene Reset</p>
+          <ul class="sans" style="font-size:0.95rem;color:#444;line-height:1.7;padding-left:1.2rem;list-style-type:disc;">
+            <li>Each task continues from where the last one ended</li>
+            <li>Occasional scene resets</li>
+            <li>Errors carry across tasks, as in real deployment</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CRONOS BENCHMARK ========== -->
+<div class="content-section white">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">The CRONOS Benchmark</h2>
+
+    <div class="content-block">
+      <div class="body-text">
+        <p>
+          <strong>C</strong>ontinual <strong>R</strong>obotic <strong>O</strong>perations in
+          <strong>NO</strong>n-episodic <strong>S</strong>ettings (CRONOS) runs on the high-fidelity ManiSkill3 physics
+          simulator and builds on the manipulation tasks from SimplerEnv and its <a href="https://rlvla.github.io" target="_blank">extension</a>.
+        </p>
+        <p>
+          <strong>Multiple tasks share a scene.</strong> CRONOS has four scenes with different backgrounds,
+          table meshes, and lighting. Each scene has its own 2 objects and 2 receptacles, giving 4
+          language-conditioned tasks of the form <em>"put the [object] on the [receptacle]"</em>, or 16 tasks
+          in total. Each task runs for 80 interaction steps.
+        </p>
+        <p>
+          Episodic training resets the scene every <em>T</em> = 80 steps, while non-episodic training resets it
+          every <em>T</em> = 320 or <em>T</em> = 2560 steps, which is every 4 or 32 tasks. On reset, objects and
+          receptacles are randomly placed in one of 16 fixed positions.
+        </p>
+        <p>
+          <strong>Models.</strong> We fine-tune two off-the-shelf VLAs, OpenVLA and SpatialVLA, with PPO.
+        </p>
+      </div>
+    </div>
+
+    <div class="video-grid">
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/scene_wood_table.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Wood table: ketchup and shovel, with yellow plate and cloth</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/scene_black_table.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Black table: carrot and banana, with red flat bowl and sheet metal</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/scene_blue_table.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Blue table: bread and 7up can, with newspaper and carpet</p>
+      </div>
+      <div>
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/scene_gray_table.mp4" type="video/mp4"></video>
+        <p class="fig-cap sans video-cap">Gray table: hamburger and plastic bottle, with frying pan and cutting board</p>
+      </div>
+    </div>
+    <p class="fig-cap sans" style="max-width:780px;margin:0.2rem auto 0;text-align:center;">
+      Non-episodic training rollouts of each scene's four tasks (<em>T</em> = 320). Objects are never reset within a clip, and the robot arm returns to its home position between tasks.
+    </p>
+
+    <div class="content-block" style="margin-top:1.5rem;">
+      <h3 class="sub-heading">Evaluation</h3>
+      <div class="body-text">
+        <p>
+          The primary metric is success rate, tested on object and receptacle configurations seen (in-domain)
+          and unseen (out-of-domain) during training.
+        </p>
+        <p>
+          In <em>independent-task evaluation</em>, the policy has up to 80 steps to complete one task. In
+          <em>sequential-task evaluation</em>, the policy completes a sequence of tasks with 80 steps each. A
+          task not finished in time counts as a failure, and the policy moves on to the next one.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== RESEARCH QUESTIONS ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Research Questions</h2>
+    <ul class="finding-list">
+      <li>
+        <span class="finding-num">Q1</span>
+        <span>How does RL fine-tuning VLAs perform out of the box, under <span class="keep-together">non-episodic, multi-task settings?</span></span>
+      </li>
+      <li>
+        <span class="finding-num">Q2</span>
+        <span>What are the key factors impacting the performance?</span>
+      </li>
+      <li>
+        <span class="finding-num">Q3</span>
+        <span>What are the advantages of non-episodic training, aside from reducing the labor cost?</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== KEY FINDINGS ========== -->
+<div class="content-section white">
+  <div class="content-block">
+    <h2 class="section-heading">Key Findings</h2>
+    <ul class="finding-list">
+      <li>
+        <span class="finding-num">F1</span>
+        <span><strong>Non-episodic fine-tuning of pre-trained VLAs is ineffective.</strong> As the scene reset interval grows from <em>T</em> = 80 to 320 to 2560, OpenVLA's success rate drops from <strong>65%</strong> to <strong>37%</strong> to <strong>0%</strong>, and SpatialVLA's drops from <strong>65%</strong> to <strong>25%</strong> to <strong>2%</strong>.</span>
+      </li>
+      <li>
+        <span class="finding-num">F2</span>
+        <span><strong>Targeted resets improve non-episodic training.</strong> With SpatialVLA, end-effector reset (EER) adds <strong>25</strong> and <strong>10</strong> percentage points at <em>T</em> = 320 and <em>T</em> = 2560. Adding curriculum learning (CL) raises success from <strong>14%</strong> to <strong>40%</strong>, and heuristic scene reset (HSR) raises it from <strong>14%</strong> to <strong>64%</strong>. Learned scene reset performs as poorly as periodic reset, and the perturbation policy fails to adapt.</span>
+      </li>
+      <li>
+        <span class="finding-num">F3</span>
+        <span><strong>Non-episodic training brings stronger out-of-domain generalization.</strong> Policies trained with <em>T</em> = 320 beat their <em>T</em> = 80 counterparts on overlapping and cluttered scenes and on later tasks in a sequence, including unseen sequences. Both use the same interaction budget, and <em>T</em> = 320 uses a quarter of the scene resets.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== RESULTS ========== -->
+<div class="content-section shaded">
+  <div class="content-block-wide">
+    <h2 class="section-heading" style="max-width:780px;margin-left:auto;margin-right:auto;">Results</h2>
+
+    <!-- A. Naive fine-tuning -->
+    <div class="content-block result-block">
+      <h3 class="sub-heading">Pre-trained VLAs Struggle under Non-Episodic Resets</h3>
+      <div class="fig-grid">
+        <img src="figures/q1_openvla.png" alt="OpenVLA success rate vs. environment steps for T = 80, 320, and 2560">
+        <img src="figures/q1_spatialvla.png" alt="SpatialVLA success rate vs. environment steps for T = 80, 320, and 2560">
+      </div>
+      <p class="fig-cap sans">
+        When directly fine-tuned in the non-episodic multi-task setting, learning performance dropped dramatically as the scene reset interval <em>T</em> increased from 80 to 320 interaction steps, and failed at <em>T</em> = 2560 steps.
+      </p>
+      <div class="fig-grid three" style="margin-top:1.5rem;">
+        <div>
+          <img src="figures/obj_dist_t80.png" alt="Object starting positions at T = 80, concentrated on 16 fixed positions">
+          <p class="fig-cap sans video-cap"><em>T</em> = 80</p>
+        </div>
+        <div>
+          <img src="figures/obj_dist_t320.png" alt="Object starting positions at T = 320, spread around the fixed positions">
+          <p class="fig-cap sans video-cap"><em>T</em> = 320</p>
+        </div>
+        <div>
+          <img src="figures/obj_dist_t2560.png" alt="Object starting positions at T = 2560, widely dispersed">
+          <p class="fig-cap sans video-cap"><em>T</em> = 2560</p>
+        </div>
+      </div>
+      <p class="fig-cap sans">
+        In non-episodic RL, each new task starts with the scene layout carried over from the previous task, so object starting positions become increasingly dispersed as the scene reset interval increases.
+      </p>
+    </div>
+
+    <!-- B. Targeted resets -->
+    <div class="content-block result-block">
+      <h3 class="sub-heading">Targeted Resets Enable Non-Episodic Fine-Tuning</h3>
+
+      <p class="result-label">End-effector reset reduces pre-training bias</p>
+      <div class="body-text">
+        <p>
+          Demonstrations used to pre-train VLAs typically start from a fixed end-effector pose, but in non-episodic training each task starts from wherever the last one ended. Episodic end-effector reset (EER) returns the end-effector to its canonical pose at each task switch and leaves the scene untouched, with no human intervention.
+        </p>
+      </div>
+      <img class="fig-single fig-narrow" src="figures/q2_eer.png" alt="SpatialVLA success rate with and without EER at T = 320 and T = 2560">
+      <p class="fig-cap sans">EER improves SpatialVLA's success rate by 25 and 10 percentage points at <em>T</em> = 320 and <em>T</em> = 2560.</p>
+
+      <p class="result-label">Frequent scene resets early in training help</p>
+      <div class="body-text">
+        <p>
+          Curriculum learning (CL) resets the scene frequently early in training (<em>T</em> = 320), then less often (<em>T</em> = 2560), gradually exposing the policy to new scene layouts.
+        </p>
+      </div>
+      <img class="fig-single fig-narrow" src="figures/q4_cl.png" alt="SpatialVLA success rate with combinations of curriculum learning and end-effector reset">
+      <p class="fig-cap sans">With EER, SpatialVLA fine-tuned with CL reaches 40% in-domain and 32% out-of-domain success, compared with 14% and 8% without CL.</p>
+
+      <p class="result-label">Why learning stalls between resets</p>
+      <div class="video-single">
+        <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/scene_drift_t2560.mp4" type="video/mp4"></video>
+      </div>
+      <p class="fig-cap sans" style="margin-bottom:1.5rem;">A <em>T</em> = 2560 training rollout on the blue table between scene resets, sped up 8&times;. By the end, only the newspaper is still on the table.</p>
+      <img class="fig-single" src="figures/rollout_success.png" alt="Rollout success rate during training, which peaks after each scene reset and then decays, with snapshots of objects dispersing across the table">
+      <p class="fig-cap sans">Rollout success peaks right after each scene reset and then decays. Objects become increasingly dispersed and eventually leave the reachable workspace, leaving few successful rollouts to learn from.</p>
+
+      <p class="result-label">Scene reset strategies</p>
+      <ul class="sans strategy-list">
+        <li><strong>Periodic Reset (PR):</strong> resets the scene every <em>T</em> = 2560 steps, and the policy proceeds directly to the next task in between.</li>
+        <li><strong>Heuristic Scene Reset (HSR):</strong> before each task switch, also resets if an object has fallen off the table or lies outside the reachable workspace.</li>
+        <li><strong>HSR-only:</strong> uses the same check, without the periodic reset.</li>
+        <li><strong>Learned Scene Reset (LSR):</strong> adds an auxiliary reset task, such as "put the [object] on the table".</li>
+        <li><strong>Perturbation Policy (PER):</strong> extends LSR with a second auxiliary task that perturbs the scene.</li>
+      </ul>
+      <img class="fig-single" src="figures/reset_strategies.png" alt="Diagram of five consecutive tasks under Episodic, PR, HSR, HSR-only, LSR, and PER, showing when each strategy resets the scene">
+      <p class="fig-cap sans">A blue label above a task marks a scene reset, and the arrow between two tasks shows how the policy proceeds to the next one.</p>
+
+      <!-- OPTIONAL VIDEO: hsr_trigger.mp4 can go here. -->
+      <div class="fig-grid" style="margin-top:1.5rem;">
+        <img src="figures/hsr.png" alt="SpatialVLA success rate with and without HSR">
+        <img src="figures/q3_steps.png" alt="SpatialVLA success rate vs. environment steps for PR, HSR, LSR, PER, and HSR-only">
+      </div>
+      <p class="fig-cap sans"><strong>Left:</strong> HSR reaches 64% success, compared with 14% without it. <strong>Right:</strong> Only HSR and HSR-only show a sustained increase in success rate.</p>
+
+      <div class="fig-grid" style="margin-top:1.5rem;">
+        <div>
+          <img src="figures/q3_resets_id.png" alt="In-domain success rate vs. number of scene resets for each strategy">
+          <p class="fig-cap sans video-cap">In-domain</p>
+        </div>
+        <div>
+          <img src="figures/q3_resets_ood.png" alt="Out-of-domain success rate vs. number of scene resets for each strategy">
+          <p class="fig-cap sans video-cap">Out-of-domain</p>
+        </div>
+      </div>
+      <p class="fig-cap sans">Under a fixed budget of 1000 resets, HSR and HSR-only still perform best, so HSR improves both interaction efficiency and reset efficiency.</p>
+    </div>
+
+    <!-- C. Benefits -->
+    <div class="content-block">
+      <h3 class="sub-heading">Benefits Beyond Reset Efficiency</h3>
+      <div class="body-text">
+        <p>
+          Under non-episodic training, policies perform tasks non-stop in a scene that becomes untidier over time. To test whether this makes them more robust, we train OpenVLA and SpatialVLA for 2.9M interaction steps at <em>T</em> = 80 and <em>T</em> = 320.
+        </p>
+      </div>
+
+      <p class="result-label">Exposure to dispersed scenes improves spatial generalization</p>
+      <img class="fig-single" src="figures/id_ood_scenes.png" alt="Example in-domain scenes and out-of-domain scenes with overlapping and cluttered objects">
+      <p class="fig-cap sans">Out-of-domain scenes include layouts that never appear in training. <strong>Overlap</strong> places at least two objects within 12 cm of each other, and <strong>Cluttered</strong> drops objects onto the table from random positions.</p>
+      <div class="video-grid">
+        <div>
+          <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/overlap_C_carrot_flat_bowl_T80_fail.mp4" type="video/mp4"></video>
+          <p class="fig-cap sans video-cap"><strong>"Put carrot on red flat bowl"</strong><br>Overlap, episodic (<em>T</em> = 80): fails</p>
+        </div>
+        <div>
+          <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/overlap_C_carrot_flat_bowl_T320_success.mp4" type="video/mp4"></video>
+          <p class="fig-cap sans video-cap"><strong>"Put carrot on red flat bowl"</strong><br>Overlap, non-episodic (<em>T</em> = 320): succeeds</p>
+        </div>
+        <div>
+          <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/drop_B_7up_can_newspaper_T80_fail.mp4" type="video/mp4"></video>
+          <p class="fig-cap sans video-cap"><strong>"Put 7up can on newspaper"</strong><br>Cluttered, episodic (<em>T</em> = 80): fails</p>
+        </div>
+        <div>
+          <video autoplay muted loop playsinline controls preload="metadata" class="scene-video"><source src="cronos_viz/drop_B_7up_can_newspaper_T320_success.mp4" type="video/mp4"></video>
+          <p class="fig-cap sans video-cap"><strong>"Put 7up can on newspaper"</strong><br>Cluttered, non-episodic (<em>T</em> = 320): succeeds</p>
+        </div>
+      </div>
+      <p class="fig-cap sans" style="max-width:780px;margin:0.2rem auto 1rem;text-align:center;">
+        Example rollouts in Overlap and Cluttered scenes. The table below gives average success rates.
+      </p>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th><em>T</em></th>
+              <th>Overlap</th>
+              <th>Cluttered</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenVLA</td><td>80</td><td>0.554</td><td>0.494</td></tr>
+            <tr><td>OpenVLA</td><td>320</td><td><strong>0.593</strong></td><td><strong>0.536</strong></td></tr>
+            <tr class="sep"><td>SpatialVLA</td><td>80</td><td>0.552</td><td>0.512</td></tr>
+            <tr><td>SpatialVLA</td><td>320</td><td><strong>0.643</strong></td><td><strong>0.550</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="result-label">Continual training improves sequential task execution</p>
+      <div class="fig-grid">
+        <div>
+          <img src="figures/seq_seen.png" alt="Success rate on Tasks 1 to 4 of seen task sequences for OpenVLA and SpatialVLA at T = 80 and T = 320">
+          <p class="fig-cap sans video-cap">Seen task sequence</p>
+        </div>
+        <div>
+          <img src="figures/seq_unseen.png" alt="Success rate on Tasks 1 to 4 of unseen task sequences for OpenVLA and SpatialVLA at T = 80 and T = 320">
+          <p class="fig-cap sans video-cap">Unseen task sequence</p>
+        </div>
+      </div>
+      <p class="fig-cap sans">Policies perform four tasks in a row in scenes initialized under the Overlap setting. Results are comparable on the first task, then <em>T</em> = 320 pulls ahead. On Task 2 of seen sequences, OpenVLA goes from 26% to 40% and SpatialVLA from 18% to 33%. By Task 4, success nearly doubles for OpenVLA and triples for SpatialVLA. Unseen sequences show a similar trend.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== LIMITATIONS ========== -->
+<div class="content-section white">
+  <div class="content-block">
+    <h2 class="section-heading">Limitations and Future Work</h2>
+    <div class="body-text">
+      <p>
+        Heuristic scene reset relies on privileged simulator state to detect unrecoverable scenes, and replacing
+        it with a perception-based detector remains future work. Scene drift also continues to limit learning
+        under long reset intervals. Addressing this drift and extending CRONOS to contact-rich tasks are
+        important directions for future work.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== BIBTEX ========== -->
+<div class="content-section white">
+  <div class="content-block">
+    <h2 class="section-heading">BibTeX</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+      <span class="sans" style="font-size:0.95rem;color:#555;">If you find this work useful, please cite:</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyBib()">Copy</button>
+    </div>
+    <pre id="bibbox">@article{wu2026cronos,
+  title     = {{CRONOS}: Benchmarking Non-Episodic Reinforcement Learning
+               for Robotic Manipulation},
+  author    = {Wu, Po-Yi and Fang, Djengo Cyun-Jyun and
+               Cheng, Dian and Ke, Tsung-Wei},
+  journal   = {arXiv preprint},
+  year      = {2026}
+}</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ========== ACKNOWLEDGMENT ========== -->
+<div class="content-section shaded">
+  <div class="content-block">
+    <h2 class="section-heading">Acknowledgment</h2>
+    <div class="body-text">
+      <p>
+        This research was supported by the National Science and Technology Council (NSTC), Taiwan, under Grants
+        114-2222-E-002-008-, 115-2222-E-002-006-, 115-2634-F-002-001-, 115-2218-E-002-026-, and 115-2634-F-002-012-.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <p>
+        Website template adapted from
+        <a href="https://nerfies.github.io" target="_blank">Nerfies</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<script>
+  const scrollBtn = document.getElementById('scrollToTop');
+  window.addEventListener('scroll', () => {
+    scrollBtn.classList.toggle('visible', window.scrollY > 300);
+  });
+  scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // Keep the last words of each paragraph together, so a last line never holds just one or two words.
+  function keepLastWordsTogether(el) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    let joined = 0, length = 0, seenWord = false;
+    for (let n = nodes.length - 1; n >= 0 && joined < 2; n--) {
+      const parts = nodes[n].nodeValue.split(/(\s+)/);
+      for (let i = parts.length - 1; i >= 0 && joined < 2; i--) {
+        if (parts[i] === '') continue;
+        if (/^\s+$/.test(parts[i])) {
+          if (!seenWord) continue;
+          if (length > 34) { joined = 2; break; }
+          parts[i] = '\u00A0';
+          joined++;
+        } else {
+          seenWord = true;
+          length += parts[i].length;
+        }
+      }
+      nodes[n].nodeValue = parts.join('');
+    }
+  }
+  document.querySelectorAll('.body-text p, .fig-cap, .finding-list li > span:last-child, .content-section ul.sans li').forEach(keepLastWordsTogether);
+
+  function copyBib() {
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(document.getElementById('bibbox').innerText).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
